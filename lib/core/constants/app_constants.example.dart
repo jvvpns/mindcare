@@ -3,8 +3,8 @@ class AppConstants {
 
   // ── Supabase ─────────────────────────────────────────────────────────────
   // Keep your actual URL and anon key here — do not commit to public repos
-  static const String supabaseUrl     = 'https://hocuwlsfannfyzwjkblw.supabase.co';
-  static const String supabaseAnonKey = 'sb_publishable_wFmRuOB7FgvAmyCsenyEuw_R_SKyD6h';
+  static const String supabaseUrl     = 'YOUR_SUPABASE_URL';
+  static const String supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
 
   // ── Gemini ────────────────────────────────────────────────────────────────
   static const String geminiApiKey    = 'YOUR_GEMINI_API_KEY';

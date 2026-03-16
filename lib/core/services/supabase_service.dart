@@ -21,7 +21,7 @@ class SupabaseService {
     );
   }
 
-  // Auth
+  // ── Auth ──────────────────────────────────────────────────────────────────
   Future<AuthResponse> signUp({
     required String email,
     required String password,
@@ -46,26 +46,26 @@ class SupabaseService {
     await client.auth.signOut();
   }
 
-  // Stream auth state changes
-  Stream<AuthState> get authStateChanges =>
-      client.auth.onAuthStateChange;
+  Stream<AuthState> get authStateChanges => client.auth.onAuthStateChange;
 
-  // Generic DB helpers
+  // ── Generic DB helpers ────────────────────────────────────────────────────
   Future<List<Map<String, dynamic>>> fetchRows({
     required String table,
-    Map<String, dynamic>? filters,
     String? orderBy,
     bool ascending = false,
     int? limit,
   }) async {
+    // Build query without invalid casts
     var query = client.from(table).select();
 
-    if (orderBy != null) {
-      query = query.order(orderBy, ascending: ascending) as PostgrestFilterBuilder;
-    }
-
-    if (limit != null) {
-      query = query.limit(limit) as PostgrestFilterBuilder;
+    if (orderBy != null && limit != null) {
+      return await query
+          .order(orderBy, ascending: ascending)
+          .limit(limit);
+    } else if (orderBy != null) {
+      return await query.order(orderBy, ascending: ascending);
+    } else if (limit != null) {
+      return await query.limit(limit);
     }
 
     return await query;
@@ -90,11 +90,11 @@ class SupabaseService {
     if (userId == null) return;
 
     const tables = [
-      'mood_logs',
-      'stress_ratings',
-      'assessments',
-      'planner_entries',
-      'settings',
+      AppConstants.tableMoodLogs,
+      AppConstants.tableStressRatings,
+      AppConstants.tableAssessments,
+      AppConstants.tablePlannerEntries,
+      AppConstants.tableSettings,
     ];
 
     for (final table in tables) {
