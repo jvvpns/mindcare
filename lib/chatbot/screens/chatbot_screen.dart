@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
-import '../../core/services/kelly_emotion_service.dart';
 import '../providers/kelly_state_provider.dart';
+import '../providers/chat_provider.dart';
+import '../widgets/chat_message_bubble.dart';
+import '../widgets/typing_indicator.dart';
+import '../widgets/reaction_log_sheet.dart';
 
 class ChatbotScreen extends ConsumerStatefulWidget {
   const ChatbotScreen({super.key});
@@ -16,10 +19,12 @@ class ChatbotScreen extends ConsumerStatefulWidget {
 
 class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -27,18 +32,35 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    // Simulate sentiment detection and set Kelly's emotion
-    final detectedEmotion = KellyEmotionService.detectEmotion(text);
-    ref.read(kellyEmotionProvider.notifier).state = detectedEmotion;
-
-    // TODO: Phase 4.5+ actual messaging logic
+    // Send the message through the provider (handles Gemini & sentiment)
+    ref.read(chatMessagesProvider.notifier).sendMessage(text);
     _messageController.clear();
+
+    // Scroll to bottom after sending
+    Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Current state from the provider
+    // Watch Kelly's current emotion for the Hero Header asset
     final currentEmotion = ref.watch(kellyEmotionProvider);
+    // Watch Chat State
+    final messages = ref.watch(chatMessagesProvider);
+    final isLoading = ref.watch(chatLoadingProvider);
+
+    // Auto-scroll when new messages arrive
+    ref.listen(chatMessagesProvider, (_, __) => Future.delayed(const Duration(milliseconds: 100), _scrollToBottom));
+    ref.listen(chatLoadingProvider, (_, __) => Future.delayed(const Duration(milliseconds: 100), _scrollToBottom));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -55,6 +77,11 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                     onPressed: () => context.pop(),
                   ),
                   const Spacer(),
+                  IconButton(
+                    tooltip: "Reaction Log (Debug)",
+                    icon: const Icon(Icons.bug_report_outlined, color: AppColors.textSecondary),
+                    onPressed: () => ReactionLogSheet.show(context),
+                  ),
                 ],
               ),
             ),
@@ -64,68 +91,59 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
               child: Material(
                 color: Colors.transparent,
                 child: Container(
-                  height: 160,
+                  height: 140,
                   width: double.infinity,
                   alignment: Alignment.center,
-                  // In phase 4, this gets swapped with RiveAnimation.network or local
+                  // In phase 4.5+, this gets swapped with RiveAnimation.network or local files
                   child: Container(
-                    padding: const EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
                       color: AppColors.accent.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Tooltip(
                       message: 'Kelly state: $currentEmotion',
-                      child: const Icon(Icons.pets, size: 80, color: AppColors.accent),
+                      child: const Icon(Icons.pets, size: 72, color: AppColors.accent),
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             
             // ── Chat List Area ──────────────────────────────────────────
             Expanded(
-              child: ListView(
+              child: ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                children: [
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        "🔒 Your conversations are stored locally.",
-                        style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Initial Placeholder
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 48),
-                      padding: const EdgeInsets.all(16),
-                      decoration: const BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(24),
-                          topRight: Radius.circular(24),
-                          bottomRight: Radius.circular(24),
-                          bottomLeft: Radius.circular(8),
+                itemCount: messages.length + (isLoading ? 1 : 0) + 1, // +1 for security banner
+                itemBuilder: (context, index) {
+                  // Security Banner is the first item
+                  if (index == 0) {
+                    return Center(
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 24),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          "🔒 Your conversations are stored locally.",
+                          style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
                         ),
                       ),
-                      child: const Text(
-                        "Hi! I'm Kelly. I'm here to listen. How are you feeling right now?",
-                        style: AppTextStyles.bodyMedium,
-                      ),
-                    ),
-                  ),
-                ],
+                    );
+                  }
+
+                  // Typing Indicator is the last item if loading
+                  if (isLoading && index == messages.length + 1) {
+                    return const TypingIndicator();
+                  }
+
+                  final message = messages[index - 1];
+                  return ChatMessageBubble(message: message);
+                },
               ),
             ),
             
