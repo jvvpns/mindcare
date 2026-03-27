@@ -22,7 +22,7 @@ class AppColors {
   static const Color accentText       = Color(0xFF3C3489);
 
   // ── Neutral Background — Soft Off-White ──────────────────────────────────
-  static const Color background       = Color(0xFFF8F7F4);
+  static const Color background       = Color(0xFFF9F8F6);
   static const Color surface          = Color(0xFFFFFFFF);
   static const Color surfaceSecondary = Color(0xFFF1EFE8);
 

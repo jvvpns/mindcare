@@ -8,8 +8,8 @@ import '../../auth/screens/login_screen.dart';
 import '../../auth/screens/signup_screen.dart';
 import '../../auth/screens/tutorial_screen.dart';
 
-// ── Main features ─────────────────────────────────────────────────────────
 import '../../dashboard/screens/dashboard_screen.dart';
+import '../../dashboard/screens/splash_breathing_screen.dart';
 import '../../mood_tracking/screens/moodtracking_screen.dart';
 import '../../chatbot/screens/chatbot_screen.dart';
 import '../../journal/screens/journal_screen.dart';
@@ -35,6 +35,7 @@ class AppRoutes {
   static const String login          = '/login';
   static const String signup         = '/signup';
   static const String tutorial       = '/tutorial';
+  static const String splash         = '/splash';
   static const String dashboard      = '/dashboard';
   static const String moodTracking   = '/mood';
   static const String chatbot        = '/chat';
@@ -74,7 +75,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Logged in — don't allow going back to auth screens
       if (isAuthenticated && isAuthRoute &&
           currentPath != AppRoutes.tutorial) {
-        return AppRoutes.dashboard;
+        
+        // If they just logged in or opened the app directly (landing on onboarding)
+        // Check if we should go to dashboard or splash. Since 'isAuthRoute' handles onboarding,
+        // we'll send them to the splash screen first. The splash screen automatically goes to dashboard.
+        return AppRoutes.splash;
       }
 
       return null;
@@ -117,11 +122,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const MoodTrackingScreen(),
           ),
           GoRoute(
-            path: AppRoutes.chatbot,
-            name: 'chatbot',
-            builder: (context, state) => const ChatbotScreen(),
-          ),
-          GoRoute(
             path: AppRoutes.journal,
             name: 'journal',
             builder: (context, state) => const JournalScreen(),
@@ -155,6 +155,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Standalone screens (no bottom nav) ────────────────────────────
+      GoRoute(
+        path: AppRoutes.splash,
+        name: 'splash',
+        builder: (context, state) => const SplashBreathingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.chatbot,
+        name: 'chatbot',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const ChatbotScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      ),
       GoRoute(
         path: AppRoutes.crisis,
         name: 'crisis',

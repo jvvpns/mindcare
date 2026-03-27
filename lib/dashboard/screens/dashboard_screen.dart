@@ -10,6 +10,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../../shared/widgets/hilway_card.dart';
 import '../../mood_tracking/providers/mood_provider.dart';
 import '../../mood_tracking/widgets/mood_bottom_sheet.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -32,16 +33,14 @@ class DashboardScreen extends ConsumerWidget {
                   _buildHeader(userName),
                   const SizedBox(height: 32),
                   
+                  // Permanent Kelly prompt
+                  const KellyPromptCard(),
+                  const SizedBox(height: 24),
+
                   _buildMoodCheckerRow(context, ref),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
-                  _buildKellyPlaceholder(context),
-                  const SizedBox(height: 24),
-
-                  _buildAcademicSnapshot(context),
-                  const SizedBox(height: 24),
-
-                  _buildQuickActionCards(context),
+                  _buildDashboardGrid(context),
                   const SizedBox(height: 48), // Bottom padding
                 ]),
               ),
@@ -55,22 +54,38 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildHeader(String name) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Hi $name,',
-              style: AppTextStyles.displayLarge,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              "Take a deep breath, you've got this.",
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-            ),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Good morning,',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${_capitalize(name)} 👋',
+                style: AppTextStyles.displayMedium,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Take a deep breath, you've got this.",
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textTertiary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
         Container(
+          margin: const EdgeInsets.only(top: 8), // Align slightly with the name line
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppColors.surface,
@@ -83,7 +98,11 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-          child: const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary, size: 24),
+          child: const Icon(
+            Icons.notifications_none_rounded, 
+            color: AppColors.textPrimary, 
+            size: 24,
+          ),
         ),
       ],
     );
@@ -100,7 +119,7 @@ class DashboardScreen extends ConsumerWidget {
             todayLog == null ? "How are you feeling today?" : "You're feeling ${todayLog.moodLabel}",
             style: AppTextStyles.headingSmall,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(AppConstants.moodEmojis.length, (index) {
@@ -112,21 +131,36 @@ class DashboardScreen extends ConsumerWidget {
                     MoodBottomSheet.show(context, index);
                   }
                 },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : AppColors.background,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary.withValues(alpha: 0.5) : Colors.transparent,
-                      width: 2,
+                child: Column(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : AppColors.surfaceSecondary,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected ? AppColors.primary.withValues(alpha: 0.5) : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          AppConstants.moodEmojis[index],
+                          style: const TextStyle(fontSize: 28),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    AppConstants.moodEmojis[index],
-                    style: const TextStyle(fontSize: 28),
-                  ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppConstants.moodLabels[index],
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               );
             }),
@@ -136,19 +170,133 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildKellyPlaceholder(BuildContext context) {
+  Widget _buildDashboardGrid(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Your Activity", style: AppTextStyles.headingMedium),
+        const SizedBox(height: 16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left column: Tasks
+            Expanded(
+              flex: 5,
+              child: HilwayCard(
+                color: AppColors.secondary.withValues(alpha: 0.1),
+                padding: const EdgeInsets.all(16),
+                onTap: () => context.go(AppRoutes.planner),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.check_circle_outline, color: AppColors.secondary, size: 20),
+                        const SizedBox(width: 8),
+                        Text("Next Duty", style: AppTextStyles.labelLarge.copyWith(color: AppColors.textPrimary)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text("Return Demo", style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
+                    Text("Foley Catheter", style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text("Today, 8:00 AM", style: AppTextStyles.caption.copyWith(color: AppColors.secondary, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Right column: Stress Graph
+            Expanded(
+              flex: 6,
+              child: HilwayCard(
+                color: AppColors.accent.withValues(alpha: 0.1),
+                padding: const EdgeInsets.all(16),
+                onTap: () => context.go(AppRoutes.selfAssessment),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.show_chart, color: AppColors.accent, size: 20),
+                        const SizedBox(width: 8),
+                        Text("Stress Trend", style: AppTextStyles.labelLarge.copyWith(color: AppColors.textPrimary)),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 70,
+                      child: LineChart(
+                        LineChartData(
+                          gridData: const FlGridData(show: false),
+                          titlesData: const FlTitlesData(show: false),
+                          borderData: FlBorderData(show: false),
+                          minX: 0, maxX: 6, minY: 0, maxY: 5,
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: const [
+                                FlSpot(0, 3), FlSpot(1, 2), FlSpot(2, 4), FlSpot(3, 3),
+                                FlSpot(4, 2), FlSpot(5, 1), FlSpot(6, 2),
+                              ],
+                              isCurved: true,
+                              color: AppColors.accent,
+                              barWidth: 3,
+                              isStrokeCapRound: true,
+                              dotData: const FlDotData(show: false),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                color: AppColors.accent.withValues(alpha: 0.2),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _capitalize(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+}
+
+class KellyPromptCard extends StatelessWidget {
+  const KellyPromptCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return HilwayCard(
-      color: AppColors.accent.withValues(alpha: 0.1),
-      onTap: () => context.go(AppRoutes.chatbot),
+      key: const ValueKey('kelly_card'),
+      color: AppColors.surface,
+      onTap: () => context.push(AppRoutes.chatbot),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.accent,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.pets, color: Colors.white, size: 28),
+            // Stand-in for Rive "Calm" state
+            child: const Icon(Icons.pets, color: AppColors.accent, size: 32),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -162,84 +310,13 @@ class DashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   "It looks like you had a long shift. Want to debrief?",
-                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
                 ),
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildAcademicSnapshot(BuildContext context) {
-    return HilwayCard(
-      onTap: () => context.go(AppRoutes.planner),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Next Up", style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
-                  const SizedBox(height: 2),
-                  Text("Return Demo: Foley Catheter", style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ],
-          ),
-          Text("8:00 AM", style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCards(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: HilwayCard(
-            color: AppColors.secondary.withValues(alpha: 0.1),
-            padding: const EdgeInsets.all(16),
-            onTap: () => context.go(AppRoutes.breathing),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.air, color: AppColors.secondary, size: 28),
-                const SizedBox(height: 12),
-                Text("Take a\nBreather", style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: HilwayCard(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            padding: const EdgeInsets.all(16),
-            onTap: () => context.go(AppRoutes.selfAssessment),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.assignment_outlined, color: AppColors.primary, size: 28),
-                const SizedBox(height: 12),
-                Text("Check your\nStress", style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

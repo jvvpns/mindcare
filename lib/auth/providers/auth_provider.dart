@@ -57,12 +57,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> signUp({
     required String email,
     required String password,
+    required String fullName,
+    required String phone,
+    required String yearLevel,
+    required String school,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final response = await SupabaseService.instance.signUp(
         email: email,
         password: password,
+        data: {
+          'full_name': fullName,
+          'phone': phone,
+          'year_level': yearLevel,
+          'school': school,
+        },
       );
       if (response.user != null) {
         state = state.copyWith(

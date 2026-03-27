@@ -72,10 +72,10 @@ class AppConstants {
 
   // ── Mood Options ──────────────────────────────────────────────────────────
   static const List<String> moodLabels = [
-    'Sad', 'Stressed', 'Neutral', 'Calm', 'Motivated'
+    'Happy', 'Angry', 'Sleepy', 'Bored'
   ];
   static const List<String> moodEmojis = [
-    '😔', '😰', '😐', '😊', '😄'
+    '😄', '😡', '😴', '😒'
   ];
 
   // ── Kelly Emotion Constants ────────────────────────────────────────────────
