@@ -90,7 +90,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 const SizedBox(height: 12),
 
                 // ── Header ──────────────────────────────────────────
-                Text('Create account', style: AppTextStyles.displayMedium),
+                const Text('Create account', style: AppTextStyles.displayMedium),
                 const SizedBox(height: 6),
                 Text(
                   'Join HILWAY and start your wellness journey',

@@ -99,7 +99,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
                           width: 140,
                           height: 140,
                           decoration: BoxDecoration(
-                            color: _colors[index].withOpacity(0.12),
+                            color: _colors[index].withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(

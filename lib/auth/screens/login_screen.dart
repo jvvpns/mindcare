@@ -73,7 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 48),
 
                 // ── Header ──────────────────────────────────────────
-                Text('Welcome back', style: AppTextStyles.displayMedium),
+                const Text('Welcome back', style: AppTextStyles.displayMedium),
                 const SizedBox(height: 6),
                 Text(
                   'Sign in to your HILWAY account',
