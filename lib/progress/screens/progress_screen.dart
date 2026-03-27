@@ -10,7 +10,7 @@ class ProgressScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Progress', style: AppTextStyles.headingSmall),
+        title: const Text('Progress', style: AppTextStyles.headingSmall),
         backgroundColor: AppColors.surface,
         elevation: 0,
       ),
@@ -27,7 +27,7 @@ class ProgressScreen extends StatelessWidget {
               child: const Icon(Icons.bar_chart_rounded, size: 36, color: AppColors.primary),
             ),
             const SizedBox(height: 16),
-            Text('Progress', style: AppTextStyles.headingMedium),
+            const Text('Progress', style: AppTextStyles.headingMedium),
             const SizedBox(height: 8),
             Text(
               'Coming in a future phase',

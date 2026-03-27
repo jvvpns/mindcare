@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:mindcare/core/constants/app_constants.dart';
+import 'package:hilway/core/constants/app_constants.dart';
 
 class SupabaseService {
   SupabaseService._();

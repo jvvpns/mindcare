@@ -10,7 +10,7 @@ class MoodTrackingScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Mood Tracker', style: AppTextStyles.headingSmall),
+        title: const Text('Mood Tracker', style: AppTextStyles.headingSmall),
         backgroundColor: AppColors.surface,
         elevation: 0,
       ),
@@ -27,7 +27,7 @@ class MoodTrackingScreen extends StatelessWidget {
               child: const Icon(Icons.mood_outlined, size: 36, color: AppColors.primary),
             ),
             const SizedBox(height: 16),
-            Text('Mood Tracker', style: AppTextStyles.headingMedium),
+            const Text('Mood Tracker', style: AppTextStyles.headingMedium),
             const SizedBox(height: 8),
             Text(
               'Coming in a future phase',

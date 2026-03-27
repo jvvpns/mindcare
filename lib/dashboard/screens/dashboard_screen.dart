@@ -10,7 +10,7 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Home', style: AppTextStyles.headingSmall),
+        title: const Text('Home', style: AppTextStyles.headingSmall),
         backgroundColor: AppColors.surface,
         elevation: 0,
       ),
@@ -27,7 +27,7 @@ class DashboardScreen extends StatelessWidget {
               child: const Icon(Icons.home_outlined, size: 36, color: AppColors.primary),
             ),
             const SizedBox(height: 16),
-            Text('Home', style: AppTextStyles.headingMedium),
+            const Text('Home', style: AppTextStyles.headingMedium),
             const SizedBox(height: 8),
             Text(
               'Coming in a future phase',

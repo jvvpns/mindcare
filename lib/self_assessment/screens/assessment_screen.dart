@@ -10,7 +10,7 @@ class SelfAssessmentScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Self Assessment', style: AppTextStyles.headingSmall),
+        title: const Text('Self Assessment', style: AppTextStyles.headingSmall),
         backgroundColor: AppColors.surface,
         elevation: 0,
       ),
@@ -27,7 +27,7 @@ class SelfAssessmentScreen extends StatelessWidget {
               child: const Icon(Icons.assignment_outlined, size: 36, color: AppColors.primary),
             ),
             const SizedBox(height: 16),
-            Text('Self Assessment', style: AppTextStyles.headingMedium),
+            const Text('Self Assessment', style: AppTextStyles.headingMedium),
             const SizedBox(height: 8),
             Text(
               'Coming in a future phase',

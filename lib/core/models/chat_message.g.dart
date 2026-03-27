@@ -1,4 +1,3 @@
-// GENERATED - Manual Hive adapter (no hive_generator needed)
 part of 'chat_message.dart';
 
 class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
@@ -12,11 +11,11 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return ChatMessage(
-      id:               fields[0] as String,
-      content:          fields[1] as String,
-      role:             fields[2] as String,
-      sentAt:           fields[3] as DateTime,
-      isCrisisDetected: fields[4] as bool,
+      id: fields[0] as String,
+      content: fields[1] as String,
+      role: fields[2] as String,
+      sentAt: fields[3] as DateTime,
+      isCrisisDetected: fields[4] as bool? ?? false,
     );
   }
 
@@ -24,11 +23,16 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
   void write(BinaryWriter writer, ChatMessage obj) {
     writer
       ..writeByte(5)
-      ..writeByte(0)..write(obj.id)
-      ..writeByte(1)..write(obj.content)
-      ..writeByte(2)..write(obj.role)
-      ..writeByte(3)..write(obj.sentAt)
-      ..writeByte(4)..write(obj.isCrisisDetected);
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.content)
+      ..writeByte(2)
+      ..write(obj.role)
+      ..writeByte(3)
+      ..write(obj.sentAt)
+      ..writeByte(4)
+      ..write(obj.isCrisisDetected);
   }
 
   @override
@@ -37,7 +41,7 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is ChatMessageAdapter &&
-              runtimeType == other.runtimeType &&
-              typeId == other.typeId;
+      other is ChatMessageAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
 }

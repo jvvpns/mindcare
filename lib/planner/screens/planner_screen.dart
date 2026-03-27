@@ -10,7 +10,7 @@ class PlannerScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Academic Planner', style: AppTextStyles.headingSmall),
+        title: const Text('Academic Planner', style: AppTextStyles.headingSmall),
         backgroundColor: AppColors.surface,
         elevation: 0,
       ),
@@ -27,7 +27,7 @@ class PlannerScreen extends StatelessWidget {
               child: const Icon(Icons.calendar_today_outlined, size: 36, color: AppColors.primary),
             ),
             const SizedBox(height: 16),
-            Text('Academic Planner', style: AppTextStyles.headingMedium),
+            const Text('Academic Planner', style: AppTextStyles.headingMedium),
             const SizedBox(height: 8),
             Text(
               'Coming in a future phase',

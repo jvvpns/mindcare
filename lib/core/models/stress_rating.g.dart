@@ -1,4 +1,3 @@
-// GENERATED - Manual Hive adapter (no hive_generator needed)
 part of 'stress_rating.dart';
 
 class StressRatingAdapter extends TypeAdapter<StressRating> {
@@ -12,11 +11,11 @@ class StressRatingAdapter extends TypeAdapter<StressRating> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return StressRating(
-      id:       fields[0] as String,
-      userId:   fields[1] as String,
-      rating:   fields[2] as int,
+      id: fields[0] as String,
+      userId: fields[1] as String,
+      rating: fields[2] as int,
       loggedAt: fields[3] as DateTime,
-      note:     fields[4] as String?,
+      note: fields[4] as String?,
     );
   }
 
@@ -24,11 +23,16 @@ class StressRatingAdapter extends TypeAdapter<StressRating> {
   void write(BinaryWriter writer, StressRating obj) {
     writer
       ..writeByte(5)
-      ..writeByte(0)..write(obj.id)
-      ..writeByte(1)..write(obj.userId)
-      ..writeByte(2)..write(obj.rating)
-      ..writeByte(3)..write(obj.loggedAt)
-      ..writeByte(4)..write(obj.note);
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.userId)
+      ..writeByte(2)
+      ..write(obj.rating)
+      ..writeByte(3)
+      ..write(obj.loggedAt)
+      ..writeByte(4)
+      ..write(obj.note);
   }
 
   @override
@@ -37,7 +41,7 @@ class StressRatingAdapter extends TypeAdapter<StressRating> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is StressRatingAdapter &&
-              runtimeType == other.runtimeType &&
-              typeId == other.typeId;
+      other is StressRatingAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
 }

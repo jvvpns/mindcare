@@ -10,7 +10,7 @@ class ChatbotScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('MindCare AI', style: AppTextStyles.headingSmall),
+        title: const Text('HILWAY AI', style: AppTextStyles.headingSmall),
         backgroundColor: AppColors.surface,
         elevation: 0,
       ),
@@ -27,7 +27,7 @@ class ChatbotScreen extends StatelessWidget {
               child: const Icon(Icons.chat_bubble_outline, size: 36, color: AppColors.primary),
             ),
             const SizedBox(height: 16),
-            Text('MindCare AI', style: AppTextStyles.headingMedium),
+            const Text('HILWAY AI', style: AppTextStyles.headingMedium),
             const SizedBox(height: 8),
             Text(
               'Coming in a future phase',

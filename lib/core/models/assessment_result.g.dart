@@ -1,4 +1,3 @@
-// GENERATED - Manual Hive adapter (no hive_generator needed)
 part of 'assessment_result.dart';
 
 class AssessmentResultAdapter extends TypeAdapter<AssessmentResult> {
@@ -12,13 +11,13 @@ class AssessmentResultAdapter extends TypeAdapter<AssessmentResult> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return AssessmentResult(
-      id:             fields[0] as String,
-      userId:         fields[1] as String,
-      type:           fields[2] as String,
-      totalScore:     fields[3] as double,
-      answers:        (fields[4] as Map).cast<String, dynamic>(),
+      id: fields[0] as String,
+      userId: fields[1] as String,
+      type: fields[2] as String,
+      totalScore: fields[3] as double,
+      answers: (fields[4] as Map).cast<String, dynamic>(),
       interpretation: fields[5] as String,
-      takenAt:        fields[6] as DateTime,
+      takenAt: fields[6] as DateTime,
     );
   }
 
@@ -26,13 +25,20 @@ class AssessmentResultAdapter extends TypeAdapter<AssessmentResult> {
   void write(BinaryWriter writer, AssessmentResult obj) {
     writer
       ..writeByte(7)
-      ..writeByte(0)..write(obj.id)
-      ..writeByte(1)..write(obj.userId)
-      ..writeByte(2)..write(obj.type)
-      ..writeByte(3)..write(obj.totalScore)
-      ..writeByte(4)..write(obj.answers)
-      ..writeByte(5)..write(obj.interpretation)
-      ..writeByte(6)..write(obj.takenAt);
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.userId)
+      ..writeByte(2)
+      ..write(obj.type)
+      ..writeByte(3)
+      ..write(obj.totalScore)
+      ..writeByte(4)
+      ..write(obj.answers)
+      ..writeByte(5)
+      ..write(obj.interpretation)
+      ..writeByte(6)
+      ..write(obj.takenAt);
   }
 
   @override
@@ -41,7 +47,7 @@ class AssessmentResultAdapter extends TypeAdapter<AssessmentResult> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is AssessmentResultAdapter &&
-              runtimeType == other.runtimeType &&
-              typeId == other.typeId;
+      other is AssessmentResultAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
 }

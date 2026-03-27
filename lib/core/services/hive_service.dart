@@ -1,17 +1,17 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:mindcare/core/constants/app_constants.dart';
-import 'package:mindcare/core/models/mood_log.dart';
-import 'package:mindcare/core/models/stress_rating.dart';
-import 'package:mindcare/core/models/chat_message.dart';
-import 'package:mindcare/core/models/planner_entry.dart';
-import 'package:mindcare/core/models/assessment_result.dart';
+import 'package:hilway/core/constants/app_constants.dart';
+import 'package:hilway/core/models/mood_log.dart';
+import 'package:hilway/core/models/stress_rating.dart';
+import 'package:hilway/core/models/chat_message.dart';
+import 'package:hilway/core/models/planner_entry.dart';
+import 'package:hilway/core/models/assessment_result.dart';
 
 class HiveService {
   HiveService._();
 
   static const _encryptionKeyName = 'hive_encryption_key';
-  static final _secureStorage = FlutterSecureStorage(
+  static const _secureStorage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 

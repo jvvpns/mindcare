@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/constants/app_constants.dart';
 import 'core/services/hive_service.dart';
 import 'core/services/supabase_service.dart';
@@ -9,6 +10,9 @@ import 'core/router/app_router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ── Load Env ──────────────────────────────────────────────────────────────
+  await dotenv.load(fileName: ".env");
+
   // ── Hive (adapters + encrypted boxes) ────────────────────────────────────
   await HiveService.init();
 
@@ -17,13 +21,13 @@ void main() async {
 
   runApp(
     const ProviderScope(
-      child: MindCareApp(),
+      child: HilwayApp(),
     ),
   );
 }
 
-class MindCareApp extends ConsumerWidget {
-  const MindCareApp({super.key});
+class HilwayApp extends ConsumerWidget {
+  const HilwayApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

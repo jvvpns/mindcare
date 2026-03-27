@@ -10,7 +10,7 @@ class ReferralScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Referral Directory', style: AppTextStyles.headingSmall),
+        title: const Text('Referral Directory', style: AppTextStyles.headingSmall),
         backgroundColor: AppColors.surface,
         elevation: 0,
       ),
@@ -27,7 +27,7 @@ class ReferralScreen extends StatelessWidget {
               child: const Icon(Icons.people_outline, size: 36, color: AppColors.primary),
             ),
             const SizedBox(height: 16),
-            Text('Referral Directory', style: AppTextStyles.headingMedium),
+            const Text('Referral Directory', style: AppTextStyles.headingMedium),
             const SizedBox(height: 8),
             Text(
               'Coming in a future phase',

@@ -10,7 +10,7 @@ class CrisisScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Crisis Support', style: AppTextStyles.headingSmall),
+        title: const Text('Crisis Support', style: AppTextStyles.headingSmall),
         backgroundColor: AppColors.surface,
         elevation: 0,
       ),
@@ -27,7 +27,7 @@ class CrisisScreen extends StatelessWidget {
               child: const Icon(Icons.emergency_outlined, size: 36, color: AppColors.primary),
             ),
             const SizedBox(height: 16),
-            Text('Crisis Support', style: AppTextStyles.headingMedium),
+            const Text('Crisis Support', style: AppTextStyles.headingMedium),
             const SizedBox(height: 8),
             Text(
               'Coming in a future phase',
