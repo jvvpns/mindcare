@@ -4,8 +4,10 @@ import 'package:hilway/core/constants/app_constants.dart';
 import 'package:hilway/core/models/mood_log.dart';
 import 'package:hilway/core/models/stress_rating.dart';
 import 'package:hilway/core/models/chat_message.dart';
+import 'package:hilway/core/models/chat_session.dart';
 import 'package:hilway/core/models/planner_entry.dart';
 import 'package:hilway/core/models/assessment_result.dart';
+import 'package:hilway/core/models/journal_entry.dart';
 
 class HiveService {
   HiveService._();
@@ -22,8 +24,10 @@ class HiveService {
     Hive.registerAdapter(MoodLogAdapter());
     Hive.registerAdapter(StressRatingAdapter());
     Hive.registerAdapter(ChatMessageAdapter());
+    Hive.registerAdapter(ChatSessionAdapter());
     Hive.registerAdapter(PlannerEntryAdapter());
     Hive.registerAdapter(AssessmentResultAdapter());
+    Hive.registerAdapter(JournalEntryAdapter());
 
     final encryptionKey = await _getOrCreateEncryptionKey();
     await _openBoxes(encryptionKey);
@@ -52,6 +56,14 @@ class HiveService {
       AppConstants.boxChatMessages,
       encryptionCipher: cipher,
     );
+    await Hive.openBox<ChatSession>(
+      AppConstants.boxChatSessions,
+      encryptionCipher: cipher,
+    );
+    await Hive.openBox<JournalEntry>(
+      AppConstants.boxJournalEntries,
+      encryptionCipher: cipher,
+    );
     await Hive.openBox(
       AppConstants.boxSettings,
       encryptionCipher: cipher,
@@ -75,11 +87,17 @@ class HiveService {
   static Box<ChatMessage> get chatBox =>
       Hive.box<ChatMessage>(AppConstants.boxChatMessages);
 
+  static Box<ChatSession> get chatSessionBox =>
+      Hive.box<ChatSession>(AppConstants.boxChatSessions);
+
   static Box<PlannerEntry> get plannerBox =>
       Hive.box<PlannerEntry>(AppConstants.boxPlannerEntries);
 
   static Box<AssessmentResult> get assessmentBox =>
       Hive.box<AssessmentResult>(AppConstants.boxAssessments);
+
+  static Box<JournalEntry> get journalBox =>
+      Hive.box<JournalEntry>(AppConstants.boxJournalEntries);
 
   static Box get settingsBox =>
       Hive.box(AppConstants.boxSettings);
@@ -103,6 +121,8 @@ class HiveService {
       AppConstants.boxMoodLogs,
       AppConstants.boxStressRatings,
       AppConstants.boxChatMessages,
+      AppConstants.boxChatSessions,
+      AppConstants.boxJournalEntries,
       AppConstants.boxPlannerEntries,
       AppConstants.boxAssessments,
       AppConstants.boxSettings,

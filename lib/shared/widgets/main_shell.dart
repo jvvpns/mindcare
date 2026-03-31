@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/router/app_router.dart';
@@ -9,16 +10,15 @@ class MainShell extends StatelessWidget {
 
   const MainShell({super.key, required this.child});
 
-  static const List<_NavItem> _items = [
-    _NavItem(label: 'Home',    icon: Icons.home_outlined,           activeIcon: Icons.home,              route: AppRoutes.dashboard),
-    _NavItem(label: 'Mood',    icon: Icons.mood_outlined,           activeIcon: Icons.mood,              route: AppRoutes.moodTracking),
-    _NavItem(label: 'Planner', icon: Icons.calendar_today_outlined, activeIcon: Icons.calendar_today,    route: AppRoutes.planner),
-    _NavItem(label: 'Profile', icon: Icons.person_outline,          activeIcon: Icons.person,            route: AppRoutes.settings),
-  ];
-
   int _selectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
-    final idx = _items.indexWhere((item) => location.startsWith(item.route));
+    const routes = [
+      AppRoutes.dashboard,
+      AppRoutes.moodTracking,
+      AppRoutes.planner,
+      AppRoutes.settings,
+    ];
+    final idx = routes.indexWhere((r) => location.startsWith(r));
     return idx < 0 ? 0 : idx;
   }
 
@@ -34,23 +34,25 @@ class MainShell extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => context.push(AppRoutes.chatbot), // Use push to allow back navigation
+            onTap: () => context.push(AppRoutes.chatbot),
             customBorder: const CircleBorder(),
             child: Container(
-              width: 64,
-              height: 64,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: AppColors.accent,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.accent.withValues(alpha: 0.3),
-                    blurRadius: 12,
+                    color: AppColors.accent.withValues(alpha: 0.25),
+                    blurRadius: 14,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: const Icon(Icons.pets, color: Colors.white, size: 32),
+              child: const Center(
+                child: PhosphorIcon(PhosphorIconsFill.firstAid, color: Colors.white, size: 28),
+              ),
             ),
           ),
         ),
@@ -68,7 +70,7 @@ class MainShell extends StatelessWidget {
         child: BottomAppBar(
           color: AppColors.surface,
           shape: const CircularNotchedRectangle(),
-          notchMargin: 8,
+          notchMargin: 6,
           elevation: 0,
           padding: EdgeInsets.zero,
           child: SafeArea(
@@ -77,11 +79,39 @@ class MainShell extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildNavItem(context, _items[0], selectedIndex == 0),
-                  _buildNavItem(context, _items[1], selectedIndex == 1),
-                  const SizedBox(width: 64), // Space for FAB
-                  _buildNavItem(context, _items[2], selectedIndex == 2),
-                  _buildNavItem(context, _items[3], selectedIndex == 3),
+                  _buildNavItem(
+                    context,
+                    label: 'Home',
+                    icon: PhosphorIconsRegular.house,
+                    activeIcon: PhosphorIconsFill.house,
+                    route: AppRoutes.dashboard,
+                    isActive: selectedIndex == 0,
+                  ),
+                  _buildNavItem(
+                    context,
+                    label: 'Mood',
+                    icon: PhosphorIconsRegular.smiley,
+                    activeIcon: PhosphorIconsFill.smiley,
+                    route: AppRoutes.moodTracking,
+                    isActive: selectedIndex == 1,
+                  ),
+                  const SizedBox(width: 56), // FAB space
+                  _buildNavItem(
+                    context,
+                    label: 'Planner',
+                    icon: PhosphorIconsRegular.calendarBlank,
+                    activeIcon: PhosphorIconsFill.calendarBlank,
+                    route: AppRoutes.planner,
+                    isActive: selectedIndex == 2,
+                  ),
+                  _buildNavItem(
+                    context,
+                    label: 'Profile',
+                    icon: PhosphorIconsRegular.user,
+                    activeIcon: PhosphorIconsFill.user,
+                    route: AppRoutes.settings,
+                    isActive: selectedIndex == 3,
+                  ),
                 ],
               ),
             ),
@@ -91,25 +121,33 @@ class MainShell extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, _NavItem item, bool isActive) {
+  Widget _buildNavItem(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required IconData activeIcon,
+    required String route,
+    required bool isActive,
+  }) {
     return Expanded(
       child: InkWell(
-        onTap: () => context.go(item.route),
+        onTap: () => context.go(route),
         borderRadius: BorderRadius.circular(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isActive ? item.activeIcon : item.icon,
-              size: 24,
+              isActive ? activeIcon : icon,
+              size: 22,
               color: isActive ? AppColors.primary : AppColors.textTertiary,
             ),
             const SizedBox(height: 2),
             Text(
-              item.label,
+              label,
               style: AppTextStyles.caption.copyWith(
                 color: isActive ? AppColors.primary : AppColors.textTertiary,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 10,
               ),
             ),
           ],
@@ -117,18 +155,4 @@ class MainShell extends StatelessWidget {
       ),
     );
   }
-}
-
-class _NavItem {
-  final String label;
-  final IconData icon;
-  final IconData activeIcon;
-  final String route;
-
-  const _NavItem({
-    required this.label,
-    required this.icon,
-    required this.activeIcon,
-    required this.route,
-  });
 }

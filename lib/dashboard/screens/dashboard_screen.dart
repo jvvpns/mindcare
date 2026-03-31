@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
@@ -10,6 +11,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../../shared/widgets/hilway_card.dart';
 import '../../mood_tracking/providers/mood_provider.dart';
 import '../../mood_tracking/widgets/mood_bottom_sheet.dart';
+import '../../progress/providers/progress_provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -33,14 +35,14 @@ class DashboardScreen extends ConsumerWidget {
                   _buildHeader(userName),
                   const SizedBox(height: 32),
                   
-                  // Permanent Kelly prompt
-                  const KellyPromptCard(),
+                  // Swipeable Highlight Carousel
+                  const DashboardCarousel(),
                   const SizedBox(height: 24),
 
                   _buildMoodCheckerRow(context, ref),
                   const SizedBox(height: 32),
 
-                  _buildDashboardGrid(context),
+                  _buildDashboardGrid(context, ref),
                   const SizedBox(height: 48), // Bottom padding
                 ]),
               ),
@@ -98,9 +100,9 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-          child: const Icon(
-            Icons.notifications_none_rounded, 
-            color: AppColors.textPrimary, 
+          child: const PhosphorIcon(
+            PhosphorIconsRegular.bell,
+            color: AppColors.textPrimary,
             size: 24,
           ),
         ),
@@ -170,7 +172,23 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDashboardGrid(BuildContext context) {
+  Widget _buildDashboardGrid(BuildContext context, WidgetRef ref) {
+    final weeklyProgress = ref.watch(weeklyProgressProvider);
+    
+    // Map data to chart spots. If no rating is found, fallback to 3 (neutral) or connect dots?
+    // Let's fallback to previous day's rating or a baseline of 1 to keep the line continuous.
+    int lastVal = 1;
+    final spots = List.generate(7, (i) {
+      if (weeklyProgress.length > i) {
+        final val = weeklyProgress[i].stressRating;
+        if (val != null) {
+          lastVal = val;
+          return FlSpot(i.toDouble(), val.toDouble());
+        }
+      }
+      return FlSpot(i.toDouble(), lastVal.toDouble());
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -191,7 +209,7 @@ class DashboardScreen extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.check_circle_outline, color: AppColors.secondary, size: 20),
+                        const Icon(PhosphorIconsRegular.checkCircle, color: AppColors.secondary, size: 20),
                         const SizedBox(width: 8),
                         Text("Next Duty", style: AppTextStyles.labelLarge.copyWith(color: AppColors.textPrimary)),
                       ],
@@ -219,13 +237,13 @@ class DashboardScreen extends ConsumerWidget {
               child: HilwayCard(
                 color: AppColors.accent.withValues(alpha: 0.1),
                 padding: const EdgeInsets.all(16),
-                onTap: () => context.go(AppRoutes.selfAssessment),
+                onTap: () => context.go(AppRoutes.progress),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.show_chart, color: AppColors.accent, size: 20),
+                        const Icon(PhosphorIconsRegular.trendUp, color: AppColors.accent, size: 20),
                         const SizedBox(width: 8),
                         Text("Stress Trend", style: AppTextStyles.labelLarge.copyWith(color: AppColors.textPrimary)),
                       ],
@@ -241,10 +259,7 @@ class DashboardScreen extends ConsumerWidget {
                           minX: 0, maxX: 6, minY: 0, maxY: 5,
                           lineBarsData: [
                             LineChartBarData(
-                              spots: const [
-                                FlSpot(0, 3), FlSpot(1, 2), FlSpot(2, 4), FlSpot(3, 3),
-                                FlSpot(4, 2), FlSpot(5, 1), FlSpot(6, 2),
-                              ],
+                              spots: spots,
                               isCurved: true,
                               color: AppColors.accent,
                               barWidth: 3,
@@ -278,15 +293,114 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-class KellyPromptCard extends StatelessWidget {
-  const KellyPromptCard({super.key});
+class DashboardCarousel extends StatefulWidget {
+  const DashboardCarousel({super.key});
+
+  @override
+  State<DashboardCarousel> createState() => _DashboardCarouselState();
+}
+
+class _DashboardCarouselState extends State<DashboardCarousel> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 112,
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            physics: const BouncingScrollPhysics(),
+            children: const [
+              _CarouselCard(
+                key: ValueKey('carousel_kelly'),
+                title: "Kelly is here",
+                subtitle: "It looks like you had a long shift. Want to debrief?",
+                iconData: PhosphorIconsRegular.firstAid,
+                route: AppRoutes.chatbot,
+              ),
+              _CarouselCard(
+                key: ValueKey('carousel_burnout'),
+                title: "Burnout Check",
+                subtitle: "Take 2 minutes to assess your current stress levels.",
+                iconData: PhosphorIconsRegular.clipboardText,
+                route: '/burnout-assessment',
+              ),
+              _CarouselCard(
+                key: ValueKey('carousel_journal'),
+                title: "Daily Reflection",
+                subtitle: "Write down one good thing that happened today.",
+                iconData: PhosphorIconsRegular.bookOpenText,
+                route: AppRoutes.journal,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(3, (index) {
+            final active = _currentPage == index;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              height: 6,
+              width: active ? 24 : 6,
+              decoration: BoxDecoration(
+                color: active ? AppColors.primary : AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+}
+
+class _CarouselCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData iconData;
+  final String route;
+
+  const _CarouselCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.iconData,
+    required this.route,
+  });
 
   @override
   Widget build(BuildContext context) {
     return HilwayCard(
-      key: const ValueKey('kelly_card'),
       color: AppColors.surface,
-      onTap: () => context.push(AppRoutes.chatbot),
+      margin: const EdgeInsets.symmetric(horizontal: 4), // Small margin to prevent clipping shadow
+      onTap: () {
+        if (route == AppRoutes.journal) {
+          // Journal route may not exist yet, just a toast or basic nav
+          try {
+            context.push(route);
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Journal module coming soon!')),
+            );
+          }
+        } else {
+          context.push(route);
+        }
+      },
       child: Row(
         children: [
           Container(
@@ -295,22 +409,24 @@ class KellyPromptCard extends StatelessWidget {
               color: AppColors.accent.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            // Stand-in for Rive "Calm" state
-            child: const Icon(Icons.pets, color: AppColors.accent, size: 32),
+            child: PhosphorIcon(iconData, color: AppColors.accent, size: 32),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "Kelly is here",
+                  title,
                   style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "It looks like you had a long shift. Want to debrief?",
+                  subtitle,
                   style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

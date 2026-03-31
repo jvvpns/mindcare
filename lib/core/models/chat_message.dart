@@ -21,12 +21,16 @@ class ChatMessage extends HiveObject {
   @HiveField(4)
   final bool isCrisisDetected;
 
+  @HiveField(5)
+  final String? sessionId;
+
   ChatMessage({
     required this.id,
     required this.content,
     required this.role,
     required this.sentAt,
     this.isCrisisDetected = false,
+    this.sessionId,
   });
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -43,6 +47,7 @@ class ChatMessage extends HiveObject {
     role:             map['role'] as String,
     sentAt:           DateTime.parse(map['sent_at'] as String),
     isCrisisDetected: map['is_crisis_detected'] as bool? ?? false,
+    sessionId:        map['session_id'] as String?,
   );
 
   Map<String, dynamic> toMap() => {
@@ -51,6 +56,7 @@ class ChatMessage extends HiveObject {
     'role':               role,
     'sent_at':            sentAt.toIso8601String(),
     'is_crisis_detected': isCrisisDetected,
+    'session_id':         sessionId,
   };
 
   // ── Gemini API Format ─────────────────────────────────────────────────────
@@ -67,6 +73,7 @@ class ChatMessage extends HiveObject {
     String? role,
     DateTime? sentAt,
     bool? isCrisisDetected,
+    String? sessionId,
   }) =>
       ChatMessage(
         id:               id ?? this.id,
@@ -74,6 +81,7 @@ class ChatMessage extends HiveObject {
         role:             role ?? this.role,
         sentAt:           sentAt ?? this.sentAt,
         isCrisisDetected: isCrisisDetected ?? this.isCrisisDetected,
+        sessionId:        sessionId ?? this.sessionId,
       );
 
   @override

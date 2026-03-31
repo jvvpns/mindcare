@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/constants/app_constants.dart';
+import '../../core/router/app_router.dart';
 import '../providers/kelly_state_provider.dart';
 import '../providers/chat_provider.dart';
+import '../providers/chat_safety_provider.dart';
+import '../providers/chat_session_provider.dart';
+import '../providers/chat_tutorial_provider.dart';
 import '../widgets/chat_message_bubble.dart';
 import '../widgets/typing_indicator.dart';
-import '../widgets/reaction_log_sheet.dart';
+import '../widgets/priority_crisis_bar.dart';
+import '../widgets/chat_tutorial_overlay.dart';
 
 class ChatbotScreen extends ConsumerStatefulWidget {
   const ChatbotScreen({super.key});
@@ -57,30 +64,51 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     // Watch Chat State
     final messages = ref.watch(chatMessagesProvider);
     final isLoading = ref.watch(chatLoadingProvider);
+    final isInitializing = ref.watch(chatInitializingProvider);
+    // Watch crisis safety state
+    final isCrisisActive = ref.watch(isCrisisActiveProvider);
 
     // Auto-scroll when new messages arrive
     ref.listen(chatMessagesProvider, (_, __) => Future.delayed(const Duration(milliseconds: 100), _scrollToBottom));
     ref.listen(chatLoadingProvider, (_, __) => Future.delayed(const Duration(milliseconds: 100), _scrollToBottom));
 
+    // Watch tutorial state
+    final showTutorial = ref.watch(chatTutorialProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // ── Header & Hero Transition ──────────────────────────────
-            Padding(
+            Column(
+              children: [
+                // ── Header & Hero Transition ──────────────────────────────
+                Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: AppColors.textPrimary),
+                    icon: const PhosphorIcon(PhosphorIconsRegular.x, color: AppColors.textPrimary),
                     onPressed: () => context.pop(),
                   ),
                   const Spacer(),
                   IconButton(
-                    tooltip: "Reaction Log (Debug)",
-                    icon: const Icon(Icons.bug_report_outlined, color: AppColors.textSecondary),
-                    onPressed: () => ReactionLogSheet.show(context),
+                    tooltip: 'New Chat',
+                    icon: const PhosphorIcon(PhosphorIconsRegular.pencilSimple, color: AppColors.textSecondary),
+                    onPressed: () {
+                      ref.read(currentSessionIdProvider.notifier).state = null;
+                      _messageController.clear();
+                    },
+                  ),
+                  IconButton(
+                    tooltip: 'History',
+                    icon: const PhosphorIcon(PhosphorIconsRegular.clock, color: AppColors.textSecondary),
+                    onPressed: () => context.push(AppRoutes.chatHistory),
+                  ),
+                  IconButton(
+                    tooltip: 'How to use',
+                    icon: const PhosphorIcon(PhosphorIconsRegular.question, color: AppColors.textSecondary),
+                    onPressed: () => ref.read(chatTutorialProvider.notifier).showTutorial(),
                   ),
                 ],
               ),
@@ -103,7 +131,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                     ),
                     child: Tooltip(
                       message: 'Kelly state: $currentEmotion',
-                      child: const Icon(Icons.pets, size: 72, color: AppColors.accent),
+                      child: const PhosphorIcon(PhosphorIconsRegular.firstAid, size: 72, color: AppColors.accent),
                     ),
                   ),
                 ),
@@ -113,7 +141,23 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
             
             // ── Chat List Area ──────────────────────────────────────────
             Expanded(
-              child: ListView.builder(
+              child: isInitializing
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Kelly is getting ready...',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 itemCount: messages.length + (isLoading ? 1 : 0) + 1, // +1 for security banner
@@ -147,11 +191,107 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
               ),
             ),
             
-            // ── Input Area ──────────────────────────────────────────────
+            // ── Crisis Bar (persistent once triggered) ─────────────────────
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              transitionBuilder: (child, animation) => SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 1),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                )),
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: isCrisisActive
+                  ? const PriorityCrisisBar(key: ValueKey('crisis_bar'))
+                  : const SizedBox.shrink(key: ValueKey('crisis_bar_hidden')),
+            ),
+
+            // ── Quick Replies (Context Aware) ───────────────────────────────
+            if (!isLoading && messages.isNotEmpty)
+              AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                child: _buildQuickReplies(currentEmotion),
+              ),
+            
+            // ── Input Area ──────────────────────────────────────────────────
             _buildInputArea(),
           ],
         ),
+        
+        // ── Tutorial Overlay ──────────────────────────────────────
+        if (showTutorial) const ChatTutorialOverlay(),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildQuickReplies(String emotion) {
+    List<Widget> chips = [];
+    
+    // Determine quick replies based on Kelly's current emotion/context
+    if (emotion == AppConstants.kellyConcerned || emotion == AppConstants.kellySad) {
+      chips = [
+        _buildChip("Try Breathing", PhosphorIconsRegular.wind),
+        _buildChip("I'm overwhelmed", PhosphorIconsRegular.warningCircle),
+      ];
+    } else if (emotion == AppConstants.kellyHappy || emotion == AppConstants.kellyExcited) {
+      chips = [
+        _buildChip("Log my mood", PhosphorIconsRegular.smiley),
+        _buildChip("Thanks, Kelly!", PhosphorIconsRegular.heart),
+      ];
+    } else {
+      chips = [
+        _buildChip("I feel stressed", PhosphorIconsRegular.cloudRain),
+        _buildChip("Tell me a joke", PhosphorIconsRegular.sparkle),
+      ];
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        scrollDirection: Axis.horizontal,
+        itemCount: chips.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, index) => chips[index],
+      ),
+    );
+  }
+
+  Widget _buildChip(String label, IconData icon) {
+    return ActionChip(
+      avatar: PhosphorIcon(icon, size: 16, color: AppColors.primary),
+      label: Text(label, style: AppTextStyles.labelMedium),
+      backgroundColor: AppColors.surface,
+      side: const BorderSide(color: AppColors.borderLight),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      onPressed: () {
+        // Intercept specific quick replies to open features directly
+        if (label == 'Try Breathing' || label == 'I feel stressed') {
+          context.push(AppRoutes.breathing);
+        } else if (label == "I'm overwhelmed") {
+          context.push(AppRoutes.crisis);
+        } else if (label == 'Log my mood') {
+          context.push(AppRoutes.moodTracking);
+        } else if (label == 'Take Assessment') {
+          context.push(AppRoutes.burnoutAssessment);
+        } else if (label == 'View Progress') {
+          context.push(AppRoutes.progress);
+        } else if (label == 'Add Journal') {
+          context.push(AppRoutes.journal);
+        } else {
+          _messageController.text = label;
+          _sendMessage();
+        }
+      },
     );
   }
 
@@ -199,7 +339,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                 color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+              child: const PhosphorIcon(PhosphorIconsRegular.paperPlaneTilt, color: Colors.white, size: 20),
             ),
           ),
         ],

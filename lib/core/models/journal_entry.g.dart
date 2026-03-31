@@ -1,41 +1,41 @@
-part of 'chat_message.dart';
+part of 'journal_entry.dart';
 
-class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
+class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
   @override
-  final int typeId = 2;
+  final int typeId = 5;
 
   @override
-  ChatMessage read(BinaryReader reader) {
+  JournalEntry read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return ChatMessage(
+    return JournalEntry(
       id: fields[0] as String,
-      content: fields[1] as String,
-      role: fields[2] as String,
-      sentAt: fields[3] as DateTime,
-      isCrisisDetected: fields[4] as bool? ?? false,
-      sessionId: fields[5] as String?,
+      title: fields[1] as String,
+      content: fields[2] as String,
+      moodIndex: fields[3] as double?,
+      createdAt: fields[4] as DateTime,
+      updatedAt: fields[5] as DateTime,
     );
   }
 
   @override
-  void write(BinaryWriter writer, ChatMessage obj) {
+  void write(BinaryWriter writer, JournalEntry obj) {
     writer
       ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.content)
+      ..write(obj.title)
       ..writeByte(2)
-      ..write(obj.role)
+      ..write(obj.content)
       ..writeByte(3)
-      ..write(obj.sentAt)
+      ..write(obj.moodIndex)
       ..writeByte(4)
-      ..write(obj.isCrisisDetected)
+      ..write(obj.createdAt)
       ..writeByte(5)
-      ..write(obj.sessionId);
+      ..write(obj.updatedAt);
   }
 
   @override
@@ -44,7 +44,7 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ChatMessageAdapter &&
+      other is JournalEntryAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

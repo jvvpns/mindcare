@@ -12,16 +12,21 @@ class AppConstants {
 
   // ── Gemini ────────────────────────────────────────────────────────────────
   static String get geminiApiKey    => dotenv.get('GEMINI_API_KEY');
-  static const String geminiModel   = 'gemini-1.5-flash';
+  static const String geminiModel   = 'gemini-3.1-flash-lite-preview';
 
   // ── Hive Box Names ────────────────────────────────────────────────────────
   static const String boxMoodLogs       = 'mood_logs';
   static const String boxStressRatings  = 'stress_ratings';
   static const String boxChatMessages   = 'chat_messages';
+  static const String boxChatSessions   = 'chat_sessions';
   static const String boxPlannerEntries = 'planner_entries';
   static const String boxAssessments    = 'assessments';
   static const String boxSettings       = 'settings';
   static const String boxUserCache      = 'user_cache';
+  static const String boxJournalEntries = 'journal_entries';
+
+  // ── Hive Keys ─────────────────────────────────────────────────────────────
+  static const String keyHasSeenChatTutorial = 'has_seen_chat_tutorial';
 
   // ── Supabase Table Names ──────────────────────────────────────────────────
   static const String tableMoodLogs       = 'mood_logs';
@@ -29,6 +34,7 @@ class AppConstants {
   static const String tablePlannerEntries = 'planner_entries';
   static const String tableAssessments    = 'assessments';
   static const String tableSettings       = 'settings';
+  static const String tableJournalEntries = 'journal_entries';
 
   // ── Hive Type IDs ─────────────────────────────────────────────────────────
   static const int hiveTypeMoodLog          = 0;
@@ -36,6 +42,8 @@ class AppConstants {
   static const int hiveTypeChatMessage      = 2;
   static const int hiveTypePlannerEntry     = 3;
   static const int hiveTypeAssessmentResult = 4;
+  static const int hiveTypeJournalEntry     = 5;
+  static const int hiveTypeChatSession      = 6;
 
   // ── App Config ────────────────────────────────────────────────────────────
   static const int  maxChatHistory  = 50;
@@ -99,7 +107,7 @@ class AppConstants {
     {
       'title': 'Meet Kelly',
       'subtitle': 'Your wellness companion',
-      'body': 'Kelly the capybara is here to listen, support, and guide you '
+      'body': 'Kelly the nursing student is here to listen, support, and guide you '
           'through your day. Chat with Kelly anytime you need a friendly ear.',
       'asset': 'assets/images/tutorial_kelly.png',
     },

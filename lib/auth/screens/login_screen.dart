@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 
@@ -91,7 +92,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'Email address',
-                    prefixIcon: Icon(Icons.email_outlined, size: 20),
+                    prefixIcon: Icon(PhosphorIconsRegular.envelope, size: 20),
                   ),
                   validator: Validators.email,
                 ),
@@ -105,12 +106,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onFieldSubmitted: (_) => _submit(),
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                    prefixIcon: const Icon(PhosphorIconsRegular.lock, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
+                            ? PhosphorIconsRegular.eye
+                            : PhosphorIconsRegular.eyeSlash,
                         size: 20,
                         color: AppColors.textTertiary,
                       ),

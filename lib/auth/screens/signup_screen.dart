@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/philippines_schools.dart';
@@ -170,7 +171,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                 );
                               },
                               errorBuilder: (context, error, stackTrace) => const Icon(
-                                Icons.school_outlined,
+                                PhosphorIconsRegular.graduationCap,
                                 color: AppColors.primary,
                                 size: 20,
                               ),
@@ -220,7 +221,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          icon: const Icon(PhosphorIconsRegular.arrowLeft, size: 20),
           onPressed: () => context.go(AppRoutes.login),
         ),
       ),
@@ -250,7 +251,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'Full Name',
-                    prefixIcon: Icon(Icons.person_outline, size: 20),
+                    prefixIcon: Icon(PhosphorIconsRegular.user, size: 20),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Full name is required' : null,
                 ),
@@ -262,7 +263,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'Phone Number',
-                    prefixIcon: Icon(Icons.phone_outlined, size: 20),
+                    prefixIcon: Icon(PhosphorIconsRegular.phone, size: 20),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Phone number is required' : null,
                 ),
@@ -277,7 +278,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   initialValue: _selectedYearLevel,
                   decoration: const InputDecoration(
                     labelText: 'Year Level',
-                    prefixIcon: Icon(Icons.school_outlined, size: 20),
+                    prefixIcon: Icon(PhosphorIconsRegular.graduationCap, size: 20),
                   ),
                   items: AppSchools.yearLevels.map((year) {
                     return DropdownMenuItem(value: year, child: Text(year));
@@ -298,7 +299,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.account_balance_outlined, color: AppColors.textSecondary, size: 20),
+                        const Icon(PhosphorIconsRegular.buildings, color: AppColors.textSecondary, size: 20),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -310,7 +311,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             ),
                           ),
                         ),
-                        const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+                        const Icon(PhosphorIconsRegular.caretDown, color: AppColors.textSecondary, size: 18),
                       ],
                     ),
                   ),
@@ -323,7 +324,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'School Name',
-                      prefixIcon: Icon(Icons.edit_outlined, size: 20),
+                      prefixIcon: Icon(PhosphorIconsRegular.pencilSimple, size: 20),
                     ),
                     validator: (v) => v == null || v.trim().isEmpty ? 'School name is required' : null,
                   ),
@@ -340,7 +341,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'Email address',
-                    prefixIcon: Icon(Icons.email_outlined, size: 20),
+                    prefixIcon: Icon(PhosphorIconsRegular.envelope, size: 20),
                   ),
                   validator: Validators.email,
                 ),
@@ -352,12 +353,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                    prefixIcon: const Icon(PhosphorIconsRegular.lock, size: 20),
                     helperText: 'At least 8 characters with 1 uppercase and 1 number',
                     helperStyle: AppTextStyles.caption,
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        _obscurePassword ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash,
                         size: 20,
                         color: AppColors.textTertiary,
                       ),
@@ -375,10 +376,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   onFieldSubmitted: (_) => _submit(),
                   decoration: InputDecoration(
                     labelText: 'Confirm password',
-                    prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                    prefixIcon: const Icon(PhosphorIconsRegular.lock, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        _obscureConfirm ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash,
                         size: 20,
                         color: AppColors.textTertiary,
                       ),

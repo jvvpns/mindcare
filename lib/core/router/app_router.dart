@@ -12,9 +12,14 @@ import '../../dashboard/screens/dashboard_screen.dart';
 import '../../dashboard/screens/splash_breathing_screen.dart';
 import '../../mood_tracking/screens/moodtracking_screen.dart';
 import '../../chatbot/screens/chatbot_screen.dart';
+import '../../chatbot/screens/chat_history_screen.dart';
 import '../../journal/screens/journal_screen.dart';
+import '../../journal/screens/journal_entry_screen.dart';
+import '../../core/models/journal_entry.dart';
 import '../../planner/screens/planner_screen.dart';
 import '../../self_assessment/screens/assessment_screen.dart';
+import '../../self_assessment/screens/burnout_assessment_screen.dart';
+import '../../self_assessment/screens/burnout_result_screen.dart';
 import '../../progress/screens/progress_screen.dart';
 import '../../crisis/screens/crisis_screen.dart';
 import '../../referral/screens/referral_screen.dart';
@@ -42,11 +47,14 @@ class AppRoutes {
   static const String journal        = '/journal';
   static const String planner        = '/planner';
   static const String selfAssessment = '/assessment';
+  static const String burnoutAssessment = '/burnout-assessment';
+  static const String burnoutResult = '/burnout-result';
   static const String progress       = '/progress';
   static const String crisis         = '/crisis';
   static const String referral       = '/referral';
   static const String breathing      = '/breathing';
   static const String settings       = '/settings';
+  static const String chatHistory    = '/chat-history';
 }
 
 // ── Router Provider ───────────────────────────────────────────────────────
@@ -127,6 +135,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const JournalScreen(),
           ),
           GoRoute(
+            path: '/journal/new',
+            name: 'journal-new',
+            builder: (context, state) => const JournalEntryScreen(),
+          ),
+          GoRoute(
+            path: '/journal/edit',
+            name: 'journal-edit',
+            builder: (context, state) {
+              final entry = state.extra as JournalEntry?;
+              return JournalEntryScreen(entry: entry);
+            },
+          ),
+          GoRoute(
             path: AppRoutes.planner,
             name: 'planner',
             builder: (context, state) => const PlannerScreen(),
@@ -135,6 +156,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.selfAssessment,
             name: 'selfAssessment',
             builder: (context, state) => const SelfAssessmentScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.burnoutAssessment,
+            name: 'burnoutAssessment',
+            builder: (context, state) => const BurnoutAssessmentScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.burnoutResult,
+            name: 'burnoutResult',
+            builder: (context, state) => const BurnoutResultScreen(),
           ),
           GoRoute(
             path: AppRoutes.progress,
@@ -170,6 +201,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             return FadeTransition(opacity: animation, child: child);
           },
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.chatHistory,
+        name: 'chatHistory',
+        builder: (context, state) => const ChatHistoryScreen(),
       ),
       GoRoute(
         path: AppRoutes.crisis,
