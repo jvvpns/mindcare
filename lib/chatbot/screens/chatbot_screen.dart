@@ -25,6 +25,7 @@ import '../providers/kelly_sound_provider.dart';
 import '../widgets/reaction_log_sheet.dart';
 import '../../core/providers/debug_provider.dart';
 import '../../shared/widgets/hilway_background.dart';
+import '../../dashboard/providers/refuel_provider.dart';
 
 class ChatbotScreen extends ConsumerStatefulWidget {
   const ChatbotScreen({super.key});
@@ -150,6 +151,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     final isCrisisActive = ref.watch(isCrisisActiveProvider);
     // Watch today's mood to drive context-aware chips
     final todayMood = ref.watch(todayMoodProvider);
+    // Watch refuel state for physical nudges
+    final refuelLog = ref.watch(refuelProvider);
+    final refuelNotifier = ref.read(refuelProvider.notifier);
 
     // Activate sound reactor — plays tones on emotion changes
     ref.watch(kellySoundReactorProvider);
@@ -187,7 +191,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                     child: Container(
-                      color: AppColors.background.withValues(alpha: 0.82),
+                      color: Colors.white.withValues(alpha: 0.92),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                         child: Row(
@@ -306,7 +310,10 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                 ),
 
                 // ── Kelly Orb Mascot ──────────────────────────────────────
-                KellyOrbMascot(emotion: currentEmotion, isThinking: isLoading),
+                Hero(
+                  tag: 'kelly_orb_hero',
+                  child: KellyOrbMascot(emotion: currentEmotion, isThinking: isLoading),
+                ),
                 const SizedBox(height: 8),
             
             // ── Chat List Area ──────────────────────────────────────────
@@ -382,7 +389,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
               AnimatedSize(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
-                child: _buildQuickReplies(currentEmotion, todayMood),
+                child: _buildQuickReplies(currentEmotion, todayMood, refuelLog, refuelNotifier),
               ),
             
                   // ── Input Area ──────────────────────────────────────────────────
@@ -399,35 +406,50 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     );
   }
 
-  Widget _buildQuickReplies(String emotion, MoodLog? todayMood) {
+  Widget _buildQuickReplies(
+    String emotion, 
+    MoodLog? todayMood, 
+    dynamic refuelLog, 
+    dynamic refuelNotifier
+  ) {
     final bool moodLogged = todayMood != null;
     List<Widget> chips = [];
 
+    // 1. Physical Health Nudge (High Priority if hungry)
+    if (refuelNotifier.shouldNudge()) {
+      chips.add(_buildChip("I haven't eaten", PhosphorIconsRegular.hamburger, openRoute: AppRoutes.dashboard));
+    }
+
+    // 2. Emotional Response Logic
     if (emotion == AppConstants.kellyConcerned || emotion == AppConstants.kellySad) {
-      // Feeling bad: offer breathing, or crying-it-out with Kelly
-      chips = [
+      // Feeling down: offer relief tools or simple venting
+      chips.addAll([
         _buildChip("Try Breathing", PhosphorIconsRegular.wind, openRoute: AppRoutes.breathing),
+        if (!moodLogged) 
+          _buildChip("Log this mood", PhosphorIconsRegular.pencilLine, openRoute: AppRoutes.moodTracking),
         _buildChip("I'm overwhelmed", PhosphorIconsRegular.warningCircle, openRoute: AppRoutes.crisis),
-      ];
+      ]);
     } else if (emotion == AppConstants.kellyHappy || emotion == AppConstants.kellyExcited) {
-      // Feeling good: mood logging if not done, else show progress
-      chips = [
+      // Feeling good: celebrate or track progress
+      chips.addAll([
         if (!moodLogged)
-          _buildChip("Log my mood 😄", PhosphorIconsRegular.smiley, openRoute: AppRoutes.moodTracking)
+          _buildChip("Log my happy mood", PhosphorIconsRegular.smiley, openRoute: AppRoutes.moodTracking)
         else
           _buildChip("View my Progress", PhosphorIconsRegular.trendUp, openRoute: AppRoutes.progress),
         _buildChip("Thanks, Kelly!", PhosphorIconsRegular.heart),
-      ];
+      ]);
     } else {
-      // Default / neutral: context-aware shortcuts
-      chips = [
+      // Neutral or other states
+      chips.addAll([
         _buildChip("I feel stressed", PhosphorIconsRegular.cloudRain),
         if (!moodLogged)
-          _buildChip("Log my mood", PhosphorIconsRegular.smiley, openRoute: AppRoutes.moodTracking)
-        else
-          _buildChip("Tell me a joke", PhosphorIconsRegular.smileyWink),
-      ];
+          _buildChip("Log my mood", PhosphorIconsRegular.smiley, openRoute: AppRoutes.moodTracking),
+        _buildChip("Academic Help", PhosphorIconsRegular.books, openRoute: AppRoutes.planner),
+      ]);
     }
+
+    // Remove duplicates and limit
+    final uniqueChips = chips.take(4).toList();
 
     if (chips.isEmpty) return const SizedBox.shrink();
 
@@ -446,14 +468,16 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
 
   Widget _buildChip(String label, IconData icon, {String? openRoute}) {
     return ActionChip(
-      avatar: PhosphorIcon(icon, size: 16, color: AppColors.primary),
-      label: Text(label, style: AppTextStyles.labelMedium),
-      backgroundColor: AppColors.surface,
-      side: const BorderSide(color: AppColors.borderLight),
+      avatar: PhosphorIcon(icon, size: 16, color: AppColors.primaryDark),
+      label: Text(label, style: AppTextStyles.labelMedium.copyWith(color: AppColors.primaryDark, fontWeight: FontWeight.bold)),
+      backgroundColor: Colors.white.withValues(alpha: 0.85),
+      side: BorderSide(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 2,
+      shadowColor: AppColors.primary.withValues(alpha: 0.1),
       onPressed: () {
         if (openRoute != null) {
-          context.push(openRoute);
+          context.go(openRoute);
         } else {
           // Send the chip label as a message to Kelly
           _messageController.text = label;
@@ -466,15 +490,16 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
   Widget _buildInputArea(bool hasEnergy) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.98),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 10,
-            offset: Offset(0, -4),
+            color: AppColors.primary.withValues(alpha: 0.12),
+            blurRadius: 15,
+            offset: const Offset(0, -6),
           ),
         ],
+        border: Border(top: BorderSide(color: AppColors.primary.withValues(alpha: 0.1))),
       ),
       child: Row(
         children: [

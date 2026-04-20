@@ -9,12 +9,14 @@ class WellnessGauge extends StatefulWidget {
   final double score; // 0.0 to 1.0
   final BurnoutLevel level;
   final String label;
+  final bool isLocked;
 
   const WellnessGauge({
     super.key,
     required this.score,
     required this.level,
     required this.label,
+    this.isLocked = false,
   });
 
   @override
@@ -77,6 +79,7 @@ class _WellnessGaugeState extends State<WellnessGauge>
                 painter: _GaugePainter(
                   score: _scoreAnimation.value,
                   level: widget.level,
+                  isLocked: widget.isLocked,
                 ),
               );
             },
@@ -87,12 +90,15 @@ class _WellnessGaugeState extends State<WellnessGauge>
           widget.label,
           style: AppTextStyles.labelMedium.copyWith(
             color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
           ),
+          textAlign: TextAlign.center,
         ),
         Text(
           'AI Resilience Scan',
-          style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textTertiary,
+          ),
         ),
       ],
     );
@@ -102,8 +108,13 @@ class _WellnessGaugeState extends State<WellnessGauge>
 class _GaugePainter extends CustomPainter {
   final double score;
   final BurnoutLevel level;
+  final bool isLocked;
 
-  _GaugePainter({required this.score, required this.level});
+  _GaugePainter({
+    required this.score, 
+    required this.level, 
+    this.isLocked = false,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -112,7 +123,7 @@ class _GaugePainter extends CustomPainter {
 
     // ── Background Arc ───────────────────────────────────────────────────────
     final bgPaint = Paint()
-      ..color = AppColors.surfaceSecondary
+      ..color = AppColors.surfaceSecondary.withValues(alpha: 0.15)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 10
       ..strokeCap = StrokeCap.round;
@@ -126,10 +137,10 @@ class _GaugePainter extends CustomPainter {
     );
 
     // ── Active Gradient Arc ──────────────────────────────────────────────────
-    final colors = [
-      AppColors.crisis,          // Left (Low resilience / Red)
-      AppColors.moodStressed,    // Mid
-      AppColors.primary,         // Right (High resilience / Teal)
+    List<Color> colors = [
+      AppColors.crisis,          // Left
+      AppColors.moodConcerned,   // Mid
+      AppColors.moodHappy,       // Right
     ];
 
     final gradient = SweepGradient(
@@ -139,7 +150,6 @@ class _GaugePainter extends CustomPainter {
       stops: const [0.1, 0.5, 0.9],
     );
 
-    // We use a Rect for the gradient that matches the arc's circle
     final rect = Rect.fromCircle(center: center, radius: radius);
 
     final activePaint = Paint()
@@ -148,7 +158,6 @@ class _GaugePainter extends CustomPainter {
       ..strokeWidth = 12
       ..strokeCap = StrokeCap.round;
 
-    // Draw the active portion based on score
     canvas.drawArc(
       rect,
       math.pi,
@@ -166,8 +175,10 @@ class _GaugePainter extends CustomPainter {
     );
 
     // Needle shadow/glow
+    final glowColor = _getLevelColor(level).withValues(alpha: 0.4);
+
     final glowPaint = Paint()
-      ..color = _getLevelColor(level).withValues(alpha: 0.4)
+      ..color = glowColor
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     canvas.drawCircle(needlePos, 8, glowPaint);
 
@@ -176,16 +187,20 @@ class _GaugePainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     canvas.drawCircle(needlePos, 5, needlePaint);
 
-    // Inner circle (cap)
-    canvas.drawCircle(center, 4, activePaint..style = PaintingStyle.fill);
+    // Inner circle (cap) - Cleaner pivot
+    final pivotPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.8)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, 6, pivotPaint);
+    canvas.drawCircle(center, 3, Paint()..color = Colors.white);
   }
 
   Color _getLevelColor(BurnoutLevel level) {
     switch (level) {
       case BurnoutLevel.low:
-        return AppColors.primary;
+        return AppColors.moodHappy;
       case BurnoutLevel.medium:
-        return AppColors.moodStressed;
+        return AppColors.moodConcerned;
       case BurnoutLevel.high:
         return AppColors.crisis;
     }

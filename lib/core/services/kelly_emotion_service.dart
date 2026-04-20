@@ -1,4 +1,5 @@
 import '../constants/app_constants.dart';
+import 'safety_service.dart';
 
 /// Analyzes user message text and Gemini response sentiment
 /// to determine which Kelly animation to display.

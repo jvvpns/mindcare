@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/services/supabase_service.dart';
 import '../../core/services/hive_service.dart';
+import '../../core/services/sync_service.dart';
 
 // ── Auth State Model ──────────────────────────────────────────────────────
 class AuthState {
@@ -71,7 +72,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> signUp({
     required String email,
     required String password,
-    required String fullName,
+    required String firstName,
+    required String lastName,
     required String phone,
     required String yearLevel,
     required String school,
@@ -82,7 +84,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         email: email,
         password: password,
         data: {
-          'full_name': fullName,
+          'first_name': firstName,
+          'last_name': lastName,
           'phone': phone,
           'year_level': yearLevel,
           'school': school,
@@ -127,6 +130,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         password: password,
       );
       if (response.user != null) {
+        // Pull all offline data from cloud into Hive
+        await SyncService.instance.pullAllData();
+
         state = state.copyWith(
           user: response.user,
           isLoading: false,
@@ -157,18 +163,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   // ── Sign Out ──────────────────────────────────────────────────────────
-  Future<void> signOut() async {
+  Future<bool> signOut() async {
     state = state.copyWith(isLoading: true);
     try {
       await SupabaseService.instance.signOut();
-      // Clear all user data from Hive on sign out
-      await HiveService.userCacheBox.clear();
+      // Securely wipe ALL local user data from Hive on sign out
+      await HiveService.clearAllData();
       state = const AuthState();
+      return true;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Sign out failed. Please try again.',
       );
+      return false;
     }
   }
 

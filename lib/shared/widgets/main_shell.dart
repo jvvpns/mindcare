@@ -14,9 +14,9 @@ class MainShell extends StatelessWidget {
     final location = GoRouterState.of(context).matchedLocation;
     const routes = [
       AppRoutes.dashboard,
-      AppRoutes.moodTracking,
+      AppRoutes.progress,
       AppRoutes.planner,
-      AppRoutes.settings,
+      AppRoutes.profile,
     ];
     final idx = routes.indexWhere((r) => location.startsWith(r));
     return idx < 0 ? 0 : idx;
@@ -34,22 +34,25 @@ class MainShell extends StatelessWidget {
         child: InkWell(
           onTap: () => context.push(AppRoutes.chatbot),
           customBorder: const CircleBorder(),
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: AppColors.accent,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.25),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: PhosphorIcon(PhosphorIconsFill.firstAid, color: Colors.white, size: 28),
+          child: Hero(
+            tag: 'kelly_orb_hero',
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.accent,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.accent.withValues(alpha: 0.25),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: PhosphorIcon(PhosphorIconsFill.firstAid, color: Colors.white, size: 28),
+              ),
             ),
           ),
         ),
@@ -89,7 +92,7 @@ class MainShell extends StatelessWidget {
                     label: 'Mood',
                     icon: PhosphorIconsRegular.smiley,
                     activeIcon: PhosphorIconsFill.smiley,
-                    route: AppRoutes.moodTracking,
+                    route: AppRoutes.progress,
                     isActive: selectedIndex == 1,
                   ),
                   const SizedBox(width: 56), // FAB space
@@ -106,7 +109,7 @@ class MainShell extends StatelessWidget {
                     label: 'Profile',
                     icon: PhosphorIconsRegular.user,
                     activeIcon: PhosphorIconsFill.user,
-                    route: AppRoutes.settings,
+                    route: AppRoutes.profile,
                     isActive: selectedIndex == 3,
                   ),
                 ],

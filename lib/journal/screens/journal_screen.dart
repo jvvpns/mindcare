@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,9 +8,26 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/app_constants.dart';
 import '../providers/journal_provider.dart';
+import '../../shared/widgets/hilway_background.dart';
+import '../../shared/widgets/hilway_card.dart';
+import '../../chatbot/providers/kelly_state_provider.dart';
 
-class JournalScreen extends ConsumerWidget {
+class JournalScreen extends ConsumerStatefulWidget {
   const JournalScreen({super.key});
+
+  @override
+  ConsumerState<JournalScreen> createState() => _JournalScreenState();
+}
+
+class _JournalScreenState extends ConsumerState<JournalScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   // ── Premium bottom-sheet delete confirmation ──────────────────────────
   Future<bool> _confirmDelete(BuildContext context, String entryTitle) async {
@@ -25,7 +43,6 @@ class JournalScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle
             Container(
               width: 40,
               height: 4,
@@ -74,9 +91,6 @@ class JournalScreen extends ConsumerWidget {
               width: double.infinity,
               child: TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
                 child: Text(
                   'Keep It',
                   style: AppTextStyles.bodyMedium.copyWith(
@@ -95,168 +109,203 @@ class JournalScreen extends ConsumerWidget {
 
   void _deleteEntry(BuildContext context, WidgetRef ref, String id) {
     ref.read(journalProvider.notifier).deleteEntry(id);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Journal entry deleted.'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final entries = ref.watch(journalProvider);
+    
+    // ── Search Filtering ───────────────────────────────────────────────────
+    final filteredEntries = entries.where((e) {
+      final query = _searchQuery.toLowerCase();
+      return e.title.toLowerCase().contains(query) || 
+             e.content.toLowerCase().contains(query);
+    }).toList();
+    
+    final effectiveEmotion = ref.watch(globalBackgroundEmotionProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Journal', style: AppTextStyles.headingSmall),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/journal/new'),
-        backgroundColor: AppColors.primary,
-        child: const Icon(PhosphorIconsRegular.pencil, color: Colors.white),
-      ),
-      body: SafeArea(
-        child: entries.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight.withValues(alpha: 0.5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const PhosphorIcon(
-                        PhosphorIconsRegular.bookOpenText,
-                        size: 48,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text('No entries yet', style: AppTextStyles.headingMedium),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Clear your mind by writing your thoughts.',
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                physics: const BouncingScrollPhysics(),
-                itemCount: entries.length,
-                itemBuilder: (context, index) {
-                  final entry = entries[index];
-                  final formattedDate =
-                      DateFormat('MMM d, yyyy • h:mm a').format(entry.createdAt);
+      backgroundColor: Colors.transparent,
+      body: HilwayBackground(
+        emotion: effectiveEmotion,
+        child: Stack(
+          children: [
+            // ── Scrollable Journal List ──────────────────────────────────────────
+            SafeArea(
+              child: filteredEntries.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(24, 140, 24, 40),
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: filteredEntries.length,
+                      itemBuilder: (context, index) {
+                        final entry = filteredEntries[index];
+                        final formattedDate = DateFormat('MMM d, yyyy • h:mm a').format(entry.createdAt);
 
-                  return Dismissible(
-                    key: Key(entry.id),
-                    direction: DismissDirection.endToStart,
-                    confirmDismiss: (_) => _confirmDelete(context, entry.title),
-                    onDismissed: (_) => _deleteEntry(context, ref, entry.id),
-                    // Swipe reveal background
-                    background: Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: AppColors.crisis.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.delete_rounded, color: AppColors.crisis, size: 26),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Delete',
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.crisis,
-                              fontWeight: FontWeight.w600,
+                        // ── Mood Color Logic ─────────────────────────────────
+                        Color glowColor = AppColors.primary;
+                        if (entry.moodIndex != null) {
+                          final mIndex = entry.moodIndex!.toInt();
+                          switch(mIndex) {
+                            case 0: glowColor = AppColors.crisis; break; // Sad
+                            case 1: glowColor = AppColors.moodConcerned; break;
+                            case 2: glowColor = AppColors.textSecondary; break; // Neutral
+                            case 3: glowColor = AppColors.moodHappy; break; // Calm/Sky
+                            case 4: glowColor = AppColors.warning; break; // Motivated
+                          }
+                        }
+
+                        return Dismissible(
+                          key: Key(entry.id),
+                          direction: DismissDirection.endToStart,
+                          confirmDismiss: (_) => _confirmDelete(context, entry.title),
+                          onDismissed: (_) => _deleteEntry(context, ref, entry.id),
+                          background: _buildDeleteBackground(),
+                          child: GestureDetector(
+                            onTap: () => context.push('/journal/edit', extra: entry),
+                            child: HilwayCard(
+                              isGlass: true,
+                              glowColor: glowColor.withValues(alpha: 0.25),
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        formattedDate,
+                                        style: AppTextStyles.labelSmall.copyWith(color: AppColors.textTertiary),
+                                      ),
+                                      if (entry.moodIndex != null && entry.moodIndex! >= 0 && entry.moodIndex! < AppConstants.moodAnimatedAssets.length)
+                                        Image.asset(
+                                          AppConstants.moodAnimatedAssets[entry.moodIndex!.toInt()],
+                                          width: 30,
+                                          height: 30,
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    entry.title,
+                                    style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold, fontSize: 17),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    entry.content,
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.textSecondary,
+                                      height: 1.5,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                    child: GestureDetector(
-                      onTap: () => context.push('/journal/edit', extra: entry),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  formattedDate,
-                                  style: AppTextStyles.labelSmall
-                                      .copyWith(color: AppColors.textTertiary),
+            ),
+
+            // ── Premium Glass Header & Search ────────────────────────────────
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: ClipRRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, bottom: 20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Row(
+                            children: [
+                              const Text('Journal Journey', style: AppTextStyles.headingSmall),
+                              const Spacer(),
+                              IconButton(
+                                icon: const PhosphorIcon(PhosphorIconsRegular.pencilSimpleLine),
+                                onPressed: () => context.push('/journal/new'),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                  foregroundColor: AppColors.primary,
                                 ),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // Mood emoji
-                                    if (entry.moodIndex != null &&
-                                        entry.moodIndex! >= 0 &&
-                                        entry.moodIndex! <
-                                            AppConstants.moodEmojis.length)
-                                      Padding(
-                                        padding: const EdgeInsets.only(right: 8),
-                                        child: Text(
-                                          AppConstants.moodEmojis[
-                                              entry.moodIndex!.toInt()],
-                                          style: const TextStyle(fontSize: 20),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              entry.title,
-                              style: AppTextStyles.headingSmall.copyWith(fontSize: 18),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              entry.content,
-                              style: AppTextStyles.bodyMedium
-                                  .copyWith(color: AppColors.textSecondary),
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        // ── Search Bar ──
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: HilwayCard(
+                            isGlass: true,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                            child: TextField(
+                              onChanged: (val) => setState(() => _searchQuery = val),
+                              style: AppTextStyles.bodyMedium,
+                              decoration: InputDecoration(
+                                hintText: 'Search reflections...',
+                                hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
+                                border: InputBorder.none,
+                                icon: const PhosphorIcon(PhosphorIconsRegular.magnifyingGlass, size: 20),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeleteBackground() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppColors.crisis.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.only(right: 24),
+      child: const Icon(Icons.delete_rounded, color: AppColors.crisis, size: 28),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+            ),
+            child: const PhosphorIcon(PhosphorIconsRegular.bookOpenText, size: 48, color: AppColors.textTertiary),
+          ),
+          const SizedBox(height: 24),
+          const Text('No reflections found', style: AppTextStyles.headingSmall),
+          const SizedBox(height: 8),
+          Text(
+            _searchQuery.isEmpty ? 'Start your journey by writing your first thought.' : 'Try a different search term.',
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+          ),
+        ],
       ),
     );
   }

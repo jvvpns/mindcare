@@ -19,7 +19,8 @@ class SignupScreen extends ConsumerStatefulWidget {
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -35,7 +36,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   void dispose() {
-    _fullNameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -73,7 +75,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final success = await ref.read(authProvider.notifier).signUp(
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          fullName: _fullNameController.text.trim(),
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
           phone: _phoneController.text.trim(),
           yearLevel: _selectedYearLevel!,
           school: schoolName,
@@ -157,25 +160,35 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             shape: BoxShape.circle,
                           ),
                           child: ClipOval(
-                            child: Image.network(
-                              school.logoUrl,
-                              fit: BoxFit.contain,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(
-                                  child: SizedBox(
-                                    width: 15,
-                                    height: 15,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                            child: school.logoUrl.startsWith('http')
+                              ? Image.network(
+                                  school.logoUrl,
+                                  fit: BoxFit.contain,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                      child: SizedBox(
+                                        width: 15,
+                                        height: 15,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) => const Icon(
+                                    PhosphorIconsRegular.graduationCap,
+                                    color: AppColors.primary,
+                                    size: 20,
                                   ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) => const Icon(
-                                PhosphorIconsRegular.graduationCap,
-                                color: AppColors.primary,
-                                size: 20,
-                              ),
-                            ),
+                                )
+                              : Image.asset(
+                                  school.logoUrl,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(
+                                    PhosphorIconsRegular.graduationCap,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                ),
                           ),
                         ),
                         title: Text(school.name, style: AppTextStyles.bodyMedium),
@@ -234,6 +247,29 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 12),
+                
+                // ── App Logo ────────────────────────────────────────
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset('assets/images/hilway_logo.png', height: 40),
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+
                 const Text('Create account', style: AppTextStyles.displayMedium),
                 const SizedBox(height: 6),
                 Text(
@@ -246,14 +282,31 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 const Text('Personal Information', style: AppTextStyles.labelLarge),
                 const SizedBox(height: 16),
                 
-                TextFormField(
-                  controller: _fullNameController,
-                  textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'Full Name',
-                    prefixIcon: Icon(PhosphorIconsRegular.user, size: 20),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Full name is required' : null,
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _firstNameController,
+                        textInputAction: TextInputAction.next,
+                        decoration: const InputDecoration(
+                          labelText: 'First Name',
+                          prefixIcon: Icon(PhosphorIconsRegular.user, size: 20),
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _lastNameController,
+                        textInputAction: TextInputAction.next,
+                        decoration: const InputDecoration(
+                          labelText: 'Last Name',
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 14),
 

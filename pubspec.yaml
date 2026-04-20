@@ -74,6 +74,7 @@ dev_dependencies:
   riverpod_generator: ^3.0.0-dev.11
   riverpod_lint: ^3.0.0-dev.4
   hive_generator: ^2.0.1
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
@@ -81,6 +82,7 @@ flutter:
     - .env
     - assets/models/
     - assets/images/
+    - assets/images/schools/
     - assets/audio/
     - assets/emoji/
 
@@ -94,3 +96,10 @@ flutter:
           weight: 600
         - asset: assets/fonts/PlusJakartaSans-Bold.ttf
           weight: 700
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/hilway_logo.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true

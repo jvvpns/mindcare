@@ -18,6 +18,12 @@ class HilwayCard extends StatefulWidget {
   /// Enables the Glassmorphism effect (BackdropFilter + frosted border).
   final bool isGlass;
 
+  /// Optional glow/shadow color to complement the design.
+  final Color? glowColor;
+
+  /// The width of the card. Defaults to double.infinity.
+  final double? width;
+
   const HilwayCard({
     super.key,
     required this.child,
@@ -26,6 +32,8 @@ class HilwayCard extends StatefulWidget {
     this.color,
     this.onTap,
     this.isGlass = false,
+    this.glowColor,
+    this.width = double.infinity,
   });
 
   @override
@@ -91,7 +99,7 @@ class _HilwayCardState extends State<HilwayCard>
   // ── Solid variant ───────────────────────────────────────────────────────
   Widget _buildSolid() {
     return Container(
-      width: double.infinity,
+      width: widget.width,
       padding: widget.padding,
       margin: widget.margin,
       decoration: BoxDecoration(
@@ -99,8 +107,8 @@ class _HilwayCardState extends State<HilwayCard>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 20,
+            color: (widget.glowColor ?? Colors.black).withValues(alpha: widget.glowColor != null ? 0.12 : 0.04),
+            blurRadius: widget.glowColor != null ? 24 : 20,
             offset: const Offset(0, 6),
           ),
         ],
@@ -109,28 +117,34 @@ class _HilwayCardState extends State<HilwayCard>
     );
   }
 
-  // ── Glass variant ───────────────────────────────────────────────────────
   Widget _buildGlass() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          width: double.infinity,
+          width: widget.width,
           padding: widget.padding,
           margin: widget.margin,
           decoration: BoxDecoration(
-            color: (widget.color ?? Colors.white).withValues(alpha: 0.65),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                (widget.color ?? Colors.white).withValues(alpha: 0.75),
+                (widget.color ?? Colors.white).withValues(alpha: 0.55),
+              ],
+            ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.6),
-              width: 1.2,
+              color: Colors.white.withValues(alpha: 0.8),
+              width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+                color: (widget.glowColor ?? Colors.black).withValues(alpha: widget.glowColor != null ? 0.18 : 0.06),
+                blurRadius: widget.glowColor != null ? 36 : 24,
+                offset: const Offset(0, 10),
               ),
             ],
           ),

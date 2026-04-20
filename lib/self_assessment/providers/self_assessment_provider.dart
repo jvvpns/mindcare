@@ -1,20 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hilway/core/services/burnout_service.dart';
 import 'package:hilway/core/services/hive_service.dart';
+import 'package:hilway/core/services/sync_service.dart';
+import 'package:uuid/uuid.dart';
 import 'package:hilway/core/models/assessment_result.dart';
 
 // State holding current answers during the assessment
 class AssessmentAnswers {
   final double sleepHours;
   final double stressLevel;
-  final double duties;
+  final double duties; // Number of high-intensity shifts
   final double mealsSkipped;
+  final double dreadLevel; // 1-5
+  final double compassionLevel; // 1-5
+  final double physicalTension; // 1-5
 
   AssessmentAnswers({
     this.sleepHours = 7.0,
     this.stressLevel = 3.0,
     this.duties = 0.0,
     this.mealsSkipped = 0.0,
+    this.dreadLevel = 1.0,
+    this.compassionLevel = 5.0,
+    this.physicalTension = 1.0,
   });
 
   AssessmentAnswers copyWith({
@@ -22,12 +30,18 @@ class AssessmentAnswers {
     double? stressLevel,
     double? duties,
     double? mealsSkipped,
+    double? dreadLevel,
+    double? compassionLevel,
+    double? physicalTension,
   }) {
     return AssessmentAnswers(
       sleepHours: sleepHours ?? this.sleepHours,
       stressLevel: stressLevel ?? this.stressLevel,
       duties: duties ?? this.duties,
       mealsSkipped: mealsSkipped ?? this.mealsSkipped,
+      dreadLevel: dreadLevel ?? this.dreadLevel,
+      compassionLevel: compassionLevel ?? this.compassionLevel,
+      physicalTension: physicalTension ?? this.physicalTension,
     );
   }
 }
@@ -49,19 +63,39 @@ class AssessmentStateNotifier extends StateNotifier<AsyncValue<AssessmentResult?
         mealsSkipped: answers.mealsSkipped,
       );
 
-      final levelStr = (analysis['level'] as BurnoutLevel).toString().split('.').last; // low, medium, high
-      final interpretation = '${levelStr[0].toUpperCase()}${levelStr.substring(1)} Burnout Risk';
+      // ── Emotional Vitals Adjustment ───────────────────────────
+      // Calculate a qualitative burden score (Max: 15)
+      // Compassion is inverted (low compassion = high burden)
+      final emotionalBurden = answers.dreadLevel + (6 - answers.compassionLevel) + answers.physicalTension;
+      
+      BurnoutLevel baseLevel = analysis['level'] as BurnoutLevel;
+      double adjustedScore = (analysis['confidence'] as double) * 100;
+
+      // Escalate risk if emotional burden is critically high (> 11)
+      if (emotionalBurden >= 11 && baseLevel != BurnoutLevel.high) {
+        baseLevel = BurnoutLevel.high;
+        adjustedScore = 85.0; // Bump score to reflect high risk
+      } else if (emotionalBurden >= 8 && baseLevel == BurnoutLevel.low) {
+        baseLevel = BurnoutLevel.medium;
+        adjustedScore = 55.0;
+      }
+
+      final levelStr = baseLevel.toString().split('.').last; // low, medium, high
+      final interpretation = '${levelStr[0].toUpperCase()}${levelStr.substring(1)} Burnout Risk (Clinically Adjusted)';
 
       final result = AssessmentResult(
-        id:             DateTime.now().millisecondsSinceEpoch.toString(),
+        id:             const Uuid().v4(),
         userId:         '', // populated if user is logged in — optional for local-only
         type:           'burnout_prediction',
-        totalScore:     (analysis['confidence'] as double) * 100,
+        totalScore:     adjustedScore,
         answers:        {
           'sleepHours':   answers.sleepHours,
           'stressLevel':  answers.stressLevel,
           'duties':       answers.duties,
           'mealsSkipped': answers.mealsSkipped,
+          'dreadLevel':   answers.dreadLevel,
+          'compassionLevel': answers.compassionLevel,
+          'physicalTension': answers.physicalTension,
         },
         interpretation: interpretation,
         takenAt:        DateTime.now(),
@@ -69,6 +103,13 @@ class AssessmentStateNotifier extends StateNotifier<AsyncValue<AssessmentResult?
 
       // Save to Hive
       await HiveService.assessmentBox.add(result);
+      
+      // Queue offline-first background sync
+      SyncService.instance.queueUpsert(
+        table: 'assessment_results',
+        id: result.id,
+        data: result.toMap(),
+      );
       
       state = AsyncValue.data(result);
     } catch (e, st) {
@@ -83,4 +124,45 @@ class AssessmentStateNotifier extends StateNotifier<AsyncValue<AssessmentResult?
 
 final assessmentStateProvider = StateNotifierProvider<AssessmentStateNotifier, AsyncValue<AssessmentResult?>>((ref) {
   return AssessmentStateNotifier();
+});
+
+/// Returns the most recent burnout assessment result.
+final lastAssessmentProvider = Provider<AssessmentResult?>((ref) {
+  final box = HiveService.assessmentBox;
+  if (box.isEmpty) return null;
+  
+  // Get all predictions and sort by date
+  final predictions = box.values
+      .where((r) => r.type == 'burnout_prediction')
+      .toList();
+      
+  if (predictions.isEmpty) return null;
+  
+  predictions.sort((a, b) => b.takenAt.compareTo(a.takenAt));
+  return predictions.first;
+});
+
+/// Calculates the remaining cooldown time (24 hours).
+final burnoutCooldownProvider = StreamProvider<Duration>((ref) async* {
+  final lastResult = ref.watch(lastAssessmentProvider);
+  if (lastResult == null) {
+    yield Duration.zero;
+    return;
+  }
+
+  const cooldownDuration = Duration(hours: 24);
+  
+  while (true) {
+    final now = DateTime.now();
+    final elapsed = now.difference(lastResult.takenAt);
+    final remaining = cooldownDuration - elapsed;
+    
+    if (remaining.isNegative) {
+      yield Duration.zero;
+      break;
+    }
+    
+    yield remaining;
+    await Future.delayed(const Duration(minutes: 1)); // Update every minute
+  }
 });

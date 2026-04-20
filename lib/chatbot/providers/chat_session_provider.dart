@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/models/chat_session.dart';
 import '../../core/services/hive_service.dart';
+import '../../core/services/sync_service.dart';
 import '../../core/services/gemini_service.dart';
 
 /// Tracks the active session ID. Null means "New/Unsaved Chat".
@@ -37,6 +38,14 @@ class ChatSessionsNotifier extends StateNotifier<List<ChatSession>> {
     );
 
     await HiveService.chatSessionBox.put(newSession.id, newSession);
+    
+    // Queue offline-first background sync
+    SyncService.instance.queueUpsert(
+      table: 'chat_sessions',
+      id: newSession.id,
+      data: newSession.toMap(),
+    );
+
     _ref.read(currentSessionIdProvider.notifier).state = newSession.id;
     
     // Auto-generate title in background
@@ -58,6 +67,14 @@ class ChatSessionsNotifier extends StateNotifier<List<ChatSession>> {
         if (session != null) {
           final updatedSession = session.copyWith(title: cleanTitle);
           await HiveService.chatSessionBox.put(sessionId, updatedSession);
+          
+          // Sync title update
+          SyncService.instance.queueUpsert(
+            table: 'chat_sessions',
+            id: updatedSession.id,
+            data: updatedSession.toMap(),
+          );
+
           _loadSessions();
         }
       }
@@ -71,6 +88,14 @@ class ChatSessionsNotifier extends StateNotifier<List<ChatSession>> {
     if (session != null) {
       final updatedSession = session.copyWith(updatedAt: DateTime.now());
       await HiveService.chatSessionBox.put(sessionId, updatedSession);
+
+      // Sync update
+      SyncService.instance.queueUpsert(
+        table: 'chat_sessions',
+        id: updatedSession.id,
+        data: updatedSession.toMap(),
+      );
+
       _loadSessions();
     }
   }
@@ -78,6 +103,12 @@ class ChatSessionsNotifier extends StateNotifier<List<ChatSession>> {
   Future<void> deleteSession(String sessionId) async {
     // 1. Delete session
     await HiveService.chatSessionBox.delete(sessionId);
+
+    // Queue deletion
+    SyncService.instance.queueDelete(
+      table: 'chat_sessions',
+      id: sessionId,
+    );
 
     // 2. Delete all messages with this sessionId
     final box = HiveService.chatBox;

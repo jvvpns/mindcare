@@ -63,21 +63,23 @@ class _SplashBreathingScreenState extends State<SplashBreathingScreen> with Sing
                   return Transform.scale(
                     scale: _scaleAnimation.value,
                     child: Container(
-                      width: 120,
-                      height: 120,
+                      width: 140,
+                      height: 140,
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.2),
+                        color: Colors.white.withValues(alpha: 0.8),
                         shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.5),
-                            shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.2),
+                            blurRadius: 20,
+                            spreadRadius: 5,
                           ),
-                        ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/images/hilway_logo.png',
+                        fit: BoxFit.contain,
                       ),
                     ),
                   );

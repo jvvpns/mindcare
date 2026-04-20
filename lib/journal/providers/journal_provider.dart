@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/journal_entry.dart';
 import '../../core/services/hive_service.dart';
+import '../../core/services/sync_service.dart';
 
 class JournalNotifier extends StateNotifier<List<JournalEntry>> {
   JournalNotifier() : super([]) {
@@ -21,6 +22,14 @@ class JournalNotifier extends StateNotifier<List<JournalEntry>> {
       moodIndex: moodIndex,
     );
     await HiveService.journalBox.put(newEntry.id, newEntry);
+    
+    // Queue offline-first background sync
+    SyncService.instance.queueUpsert(
+      table: 'journal_entries',
+      id: newEntry.id,
+      data: newEntry.toMap(),
+    );
+    
     _loadEntries();
   }
 
@@ -32,11 +41,26 @@ class JournalNotifier extends StateNotifier<List<JournalEntry>> {
       updatedAt: DateTime.now(),
     );
     await HiveService.journalBox.put(updated.id, updated);
+    
+    // Queue offline-first background sync
+    SyncService.instance.queueUpsert(
+      table: 'journal_entries',
+      id: updated.id,
+      data: updated.toMap(),
+    );
+    
     _loadEntries();
   }
 
   Future<void> deleteEntry(String id) async {
     await HiveService.journalBox.delete(id);
+    
+    // Queue deletion
+    SyncService.instance.queueDelete(
+      table: 'journal_entries',
+      id: id,
+    );
+    
     _loadEntries();
   }
 }

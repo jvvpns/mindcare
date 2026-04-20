@@ -156,51 +156,51 @@ class _KellyOrbMascotState extends State<KellyOrbMascot>
     switch (emotion) {
       case AppConstants.kellyHappy:
         return _OrbColors(
-          core: const Color(0xFFB8A0E8),      // Soft lavender
-          mid: const Color(0xFF8B72D4),        // Accent lavender
-          halo: const Color(0xFFD4C4F5),       // Light lavender glow
-          shimmer: const Color(0xFFF5E6D0),    // Warm gold shimmer
+          core: const Color(0xFFE1F5FE),      // Light sky blue
+          mid: const Color(0xFF4FC3F7),       // Sky blue core
+          halo: const Color(0xFFB3E5FC),      // Soft blue glow
+          shimmer: Colors.white,
         );
       case AppConstants.kellyExcited:
         return _OrbColors(
-          core: const Color(0xFFA8D48B),       // Bright sage
-          mid: const Color(0xFF8B72D4),        // Lavender accent
-          halo: const Color(0xFFD0E8C0),       // Soft green glow
+          core: const Color(0xFFFFF9C4),       // Pale gold
+          mid: const Color(0xFFFFD54F),        // Electric gold
+          halo: const Color(0xFFFFF176),       // Bright yellow halo
           shimmer: Colors.white,
         );
       case AppConstants.kellySad:
         return _OrbColors(
-          core: const Color(0xFF85B7EB),       // Muted sky blue
-          mid: const Color(0xFF6A9BD4),        // Deeper blue
-          halo: const Color(0xFFB0D0F0),       // Soft blue haze
-          shimmer: const Color(0xFFA0C8E8),    // Cool shimmer
+          core: const Color(0xFFF3E5F5),       // Light lavender
+          mid: const Color(0xFFB39DDB),        // Muted purple
+          halo: const Color(0xFFD1C4E9),       // Soft purple haze
+          shimmer: const Color(0xFFEDE7F6),    // Cool shimmer
         );
       case AppConstants.kellyConcerned:
         return _OrbColors(
-          core: const Color(0xFFE8C078),       // Warm amber
-          mid: const Color(0xFFC4861A),        // Warning amber
-          halo: const Color(0xFFF0D8A0),       // Soft amber glow
-          shimmer: const Color(0xFFF5E0B0),    // Warm shimmer
+          core: const Color(0xFFFFF3E0),       // Pale peach
+          mid: const Color(0xFFFFAB91),        // Soft coral
+          halo: const Color(0xFFFFCCBC),       // Warm amber glow
+          shimmer: const Color(0xFFFFFDE7),    // Warm shimmer
         );
       case AppConstants.kellySurprised:
         return _OrbColors(
           core: Colors.white,
-          mid: const Color(0xFFB8A0E8),        // Light lavender
-          halo: const Color(0xFFE8E0F8),       // Bright halo
+          mid: const Color(0xFFF06292),        // Bright pink
+          halo: const Color(0xFFFCE4EC),       // Soft pink halo
           shimmer: Colors.white,
         );
       case AppConstants.kellyCalm:
         return _OrbColors(
-          core: const Color(0xFF5DCAA5),       // Calm teal
-          mid: const Color(0xFF5A9E4A),        // Sage
-          halo: const Color(0xFFB0E8D0),       // Soft teal glow
-          shimmer: const Color(0xFFC0F0E0),    // Cool shimmer
+          core: const Color(0xFFE0F2F1),       // Pale mint
+          mid: const Color(0xFF4DB6AC),        // Deep teal
+          halo: const Color(0xFFB2DFDB),       // Soft teal glow
+          shimmer: const Color(0xFFE0F7FA),    // Cool shimmer
         );
       default: // kellyDefault
         return _OrbColors(
-          core: const Color(0xFFD0E0F5),       // Pale blue-white
-          mid: AppColors.primary,               // Soft blue
-          halo: const Color(0xFFC0D8F0),       // Soft blue glow
+          core: const Color(0xFFF9F8F6),       // Off-white
+          mid: const Color(0xFFE1E8F0),        // Soft blue-grey
+          halo: const Color(0xFFECEFF1),       // Neutral glow
           shimmer: Colors.white,
         );
     }
@@ -413,6 +413,7 @@ class _KellyMiniOrbState extends State<KellyMiniOrb>
     with TickerProviderStateMixin {
   late AnimationController _breatheController;
   late AnimationController _morphController;
+  late AnimationController _floatController;
 
   @override
   void initState() {
@@ -426,12 +427,18 @@ class _KellyMiniOrbState extends State<KellyMiniOrb>
       vsync: this,
       duration: const Duration(milliseconds: 8000),
     )..repeat();
+
+    _floatController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _breatheController.dispose();
     _morphController.dispose();
+    _floatController.dispose();
     super.dispose();
   }
 
@@ -439,24 +446,30 @@ class _KellyMiniOrbState extends State<KellyMiniOrb>
   Widget build(BuildContext context) {
     final colors = _KellyOrbMascotState._getColorsForEmotion(widget.emotion);
 
-    return SizedBox(
-      width: widget.size,
-      height: widget.size,
-      child: AnimatedBuilder(
-        animation: Listenable.merge([_breatheController, _morphController]),
-        builder: (context, _) {
-          return CustomPaint(
-            painter: _KellyOrbPainter(
-              breatheT: _breatheController.value,
-              morphT: _morphController.value,
-              shimmerT: 0,
-              colors: colors,
-              isThinking: false,
-              orbSize: widget.size,
+    return AnimatedBuilder(
+      animation: Listenable.merge([_breatheController, _morphController, _floatController]),
+      builder: (context, _) {
+        // Gentle float: -3px to +3px
+        final floatY = -3.0 + (_floatController.value * 6.0);
+        
+        return Transform.translate(
+          offset: Offset(0, floatY),
+          child: SizedBox(
+            width: widget.size,
+            height: widget.size,
+            child: CustomPaint(
+              painter: _KellyOrbPainter(
+                breatheT: _breatheController.value,
+                morphT: _morphController.value,
+                shimmerT: 0,
+                colors: colors,
+                isThinking: false,
+                orbSize: widget.size,
+              ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

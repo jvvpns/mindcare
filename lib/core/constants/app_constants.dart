@@ -25,6 +25,8 @@ class AppConstants {
   static const String boxUserCache      = 'user_cache';
   static const String boxJournalEntries = 'journal_entries';
   static const String boxShiftTasks     = 'shift_tasks';
+  static const String boxRefuelLogs     = 'refuel_logs';
+  static const String boxSyncQueue      = 'sync_queue';
 
   // ── Hive Keys ─────────────────────────────────────────────────────────────
   static const String keyHasSeenOnboarding     = 'has_seen_onboarding';
@@ -49,6 +51,7 @@ class AppConstants {
   static const int hiveTypeJournalEntry     = 5;
   static const int hiveTypeChatSession      = 6;
   static const int hiveTypeShiftTask       = 8;
+  static const int hiveTypeRefuelLog       = 9;
 
 
   // ── App Config ────────────────────────────────────────────────────────────

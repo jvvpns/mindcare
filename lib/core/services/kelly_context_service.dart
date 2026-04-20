@@ -1,6 +1,8 @@
 import 'package:intl/intl.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:hilway/core/services/hive_service.dart';
+import 'package:hilway/core/services/sync_service.dart';
+import 'package:uuid/uuid.dart';
 import 'package:hilway/core/models/chat_message.dart' as hive_msg;
 
 /// Responsible for:
@@ -155,7 +157,7 @@ class KellyContextService {
   }) async {
     try {
       final msg = hive_msg.ChatMessage(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: const Uuid().v4(),
         content: content,
         role: role,
         sentAt: DateTime.now(),
@@ -163,6 +165,13 @@ class KellyContextService {
         sessionId: sessionId,
       );
       await HiveService.chatBox.add(msg);
+      
+      // Queue offline-first background sync
+      SyncService.instance.queueUpsert(
+        table: 'chat_messages',
+        id: msg.id,
+        data: msg.toMap(),
+      );
     } catch (_) {
       // Non-fatal — don't crash the chat if persistence fails
     }

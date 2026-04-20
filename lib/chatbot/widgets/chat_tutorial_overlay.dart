@@ -118,7 +118,8 @@ class ChatTutorialOverlay extends ConsumerWidget {
             alignment: WrapAlignment.center,
             children: [
               _buildExampleChip('"I feel stressed" ➔ Breathing Tool'),
-              _buildExampleChip('"I am happy" ➔ Mood Tracker'),
+              _buildExampleChip('"I\'m feeling [mood]" ➔ Mood Tracker'),
+              _buildExampleChip('"I haven\'t eaten" ➔ Refuel Chart'),
               _buildExampleChip('"I feel overwhelmed" ➔ Crisis Support'),
             ],
           ),

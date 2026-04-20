@@ -15,6 +15,7 @@ import '../../chatbot/screens/chatbot_screen.dart';
 import '../../chatbot/screens/chat_history_screen.dart';
 import '../../journal/screens/journal_screen.dart';
 import '../../journal/screens/journal_entry_screen.dart';
+import '../../profile/screens/profile_screen.dart';
 import '../../core/models/journal_entry.dart';
 import '../../planner/screens/planner_screen.dart';
 import '../../self_assessment/screens/assessment_screen.dart';
@@ -60,6 +61,7 @@ class AppRoutes {
   static const String settings       = '/settings';
   static const String chatHistory    = '/chat-history';
   static const String clinicalDuty   = '/clinical-duty';
+  static const String profile        = '/profile';
 }
 
 class RouterNotifier extends ChangeNotifier {
@@ -97,7 +99,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   // Determine starting location
   String initialLocation = AppRoutes.onboarding;
   if (ref.read(authProvider).isAuthenticated) {
-    initialLocation = AppRoutes.dashboard;
+    initialLocation = AppRoutes.splash;
   } else if (hasSeenOnboarding) {
     initialLocation = AppRoutes.login;
   }
@@ -133,8 +135,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // 1. Logged In -> Prevent going back to login/signup/onboarding
       if (isAuthenticated && isAuthRoute && currentPath != AppRoutes.tutorial) {
-        debugPrint('Router: Authenticated & on AuthRoute -> Dashboard');
-        return AppRoutes.dashboard;
+        debugPrint('Router: Authenticated & on AuthRoute -> Splash');
+        return AppRoutes.splash;
       }
 
       // 2. Not Logged In -> Enforce onboarding or login
@@ -145,8 +147,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // 3. Prevent Onboarding if already seen
       if (currentPath == AppRoutes.onboarding && hasSeenOnboardingReactive) {
-        debugPrint('Router: Onboarding but Seen -> Login/Dashboard');
-        return isAuthenticated ? AppRoutes.dashboard : AppRoutes.login;
+        debugPrint('Router: Onboarding but Seen -> Login/Splash');
+        return isAuthenticated ? AppRoutes.splash : AppRoutes.login;
       }
 
       return null;
@@ -246,6 +248,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'clinicalDuty',
             builder: (context, state) => const ClinicalDutyScreen(),
           ),
+          GoRoute(
+            path: AppRoutes.profile,
+            name: 'profile',
+            builder: (context, state) => const ProfileScreen(),
+          ),
         ],
       ),
 
@@ -259,7 +266,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.chatbot,
         name: 'chatbot',
         pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
           child: const ChatbotScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);

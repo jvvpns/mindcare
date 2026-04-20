@@ -101,7 +101,7 @@ class ChatMessageBubble extends StatelessWidget {
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [AppColors.primary, AppColors.accentDark],
+        colors: [Color(0xFF0288D1), Color(0xFF5E35B1)],
       ),
       borderRadius: const BorderRadius.only(
         topLeft: Radius.circular(20),
@@ -111,7 +111,7 @@ class ChatMessageBubble extends StatelessWidget {
       ),
       boxShadow: [
         BoxShadow(
-          color: AppColors.primary.withValues(alpha: 0.25),
+          color: const Color(0xFF0288D1).withValues(alpha: 0.3),
           blurRadius: 12,
           offset: const Offset(0, 4),
         ),
@@ -121,7 +121,7 @@ class ChatMessageBubble extends StatelessWidget {
 
   BoxDecoration _kellyBubbleDecoration() {
     return BoxDecoration(
-      color: AppColors.surface,
+      color: Colors.white,
       borderRadius: const BorderRadius.only(
         topLeft: Radius.circular(4),
         topRight: Radius.circular(20),
@@ -129,17 +129,17 @@ class ChatMessageBubble extends StatelessWidget {
         bottomRight: Radius.circular(20),
       ),
       border: Border.all(
-        color: AppColors.accent.withValues(alpha: 0.12),
-        width: 1,
+        color: Colors.white.withValues(alpha: 0.9),
+        width: 1.5,
       ),
       boxShadow: [
         BoxShadow(
-          color: AppColors.accent.withValues(alpha: 0.06),
+          color: Colors.black.withValues(alpha: 0.08),
           blurRadius: 16,
           offset: const Offset(0, 4),
         ),
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.03),
+          color: Colors.black.withValues(alpha: 0.04),
           blurRadius: 6,
           offset: const Offset(0, 2),
         ),
@@ -210,32 +210,34 @@ class _SuggestedActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push(route),
+      onTap: () => context.go(route),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.primary.withValues(alpha: 0.10),
-              AppColors.accent.withValues(alpha: 0.08),
-            ],
-          ),
+          color: Colors.white.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.25),
-            width: 1,
+            color: AppColors.primary.withValues(alpha: 0.6),
+            width: 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const PhosphorIcon(PhosphorIconsRegular.wind, size: 15, color: AppColors.primary),
+            const PhosphorIcon(PhosphorIconsRegular.wind, size: 16, color: AppColors.primaryDark),
             const SizedBox(width: 8),
             Text(
               'Start Breathing Exercise',
               style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],

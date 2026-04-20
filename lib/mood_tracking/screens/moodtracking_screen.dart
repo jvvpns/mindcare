@@ -8,6 +8,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/app_constants.dart';
 import '../../shared/widgets/hilway_background.dart';
 import '../providers/mood_provider.dart';
+import '../../chatbot/providers/kelly_state_provider.dart';
 
 class MoodTrackingScreen extends ConsumerWidget {
   const MoodTrackingScreen({super.key});
@@ -15,6 +16,7 @@ class MoodTrackingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final moodLogs = ref.watch(moodLogsProvider);
+    final effectiveEmotion = ref.watch(globalBackgroundEmotionProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -26,6 +28,7 @@ class MoodTrackingScreen extends ConsumerWidget {
         centerTitle: true,
       ),
       body: HilwayBackground(
+        emotion: effectiveEmotion,
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

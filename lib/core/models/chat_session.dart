@@ -30,6 +30,26 @@ class ChatSession extends HiveObject {
         updatedAt: updatedAt ?? this.updatedAt,
       );
 
+  // ── Supabase ──────────────────────────────────────────────────────────────
+  factory ChatSession.fromMap(Map<String, dynamic> map) {
+    return ChatSession(
+      id: map['id'] as String,
+      title: map['title'] as String,
+      createdAt: DateTime.parse(map['started_at'] as String),
+      updatedAt: DateTime.parse(map['last_message_at'] as String),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      // 'user_id' will be injected by SyncService
+      'title': title,
+      'started_at': createdAt.toIso8601String(),
+      'last_message_at': updatedAt.toIso8601String(),
+    };
+  }
+
   @override
   String toString() => 'ChatSession(id: $id, title: $title, createdAt: $createdAt)';
 }

@@ -6,6 +6,7 @@ import '../../core/models/journal_entry.dart';
 import '../../core/services/hive_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../journal/providers/journal_provider.dart';
+import '../../core/services/sync_service.dart';
 
 // Provider that holds today's MoodLog if it exists
 final todayMoodProvider = StateNotifierProvider<MoodNotifier, MoodLog?>((ref) {
@@ -95,11 +96,26 @@ class MoodNotifier extends StateNotifier<MoodLog?> {
     );
     await HiveService.journalBox.put(journalEntry.id, journalEntry);
 
-    // Update state to reflect it instantly in the UI
-    state = moodLog;
+    // Queue offline-first background sync
+    SyncService.instance.queueUpsert(
+      table: 'mood_logs',
+      id: moodLog.id,
+      data: moodLog.toMap(),
+    );
+    SyncService.instance.queueUpsert(
+      table: 'stress_ratings',
+      id: stressLog.id,
+      data: stressLog.toMap(),
+    );
+    SyncService.instance.queueUpsert(
+      table: 'journal_entries',
+      id: journalEntry.id,
+      data: journalEntry.toMap(),
+    );
 
-    // Invalidate journalProvider so the dashboard's "Daily Reflection" card
-    // immediately shows the new entry without needing a restart.
+    // Invalidate providers so the UI reflects changes instantly
+    state = moodLog;
+    _ref.invalidate(moodLogsProvider);
     _ref.invalidate(journalProvider);
 
     // Phase 3: Sync to Supabase in background (omitted for now until tables exist)

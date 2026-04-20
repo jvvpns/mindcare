@@ -63,4 +63,28 @@ class JournalEntry extends HiveObject {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  // ── Supabase ──────────────────────────────────────────────────────────────
+  factory JournalEntry.fromMap(Map<String, dynamic> map) {
+    return JournalEntry(
+      id: map['id'] as String,
+      title: map['title'] as String,
+      content: map['content'] as String,
+      moodIndex: map['mood_index'] != null ? (map['mood_index'] as num).toDouble() : null,
+      createdAt: DateTime.parse(map['created_at'] as String),
+      updatedAt: DateTime.parse(map['updated_at'] as String),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      // 'user_id' will be injected by SyncService
+      'title': title,
+      'content': content,
+      'mood_index': moodIndex,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
 }

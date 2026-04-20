@@ -10,6 +10,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../shared/widgets/hilway_background.dart';
 import '../../core/models/planner_entry.dart';
 import '../providers/planner_provider.dart';
+import '../../chatbot/providers/kelly_state_provider.dart';
 
 class PlannerScreen extends ConsumerStatefulWidget {
   const PlannerScreen({super.key});
@@ -46,6 +47,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     // Split selected day tasks
     final todayPending = selectedDayTasks.where((t) => !t.isCompleted).toList();
     final todayDone = selectedDayTasks.where((t) => t.isCompleted).toList();
+    final effectiveEmotion = ref.watch(globalBackgroundEmotionProvider);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -83,6 +85,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         label: Text('Add Task', style: AppTextStyles.labelMedium.copyWith(color: Colors.white)),
       ),
       body: HilwayBackground(
+        emotion: effectiveEmotion,
         child: SafeArea(
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),

@@ -5,6 +5,7 @@ import '../../core/models/planner_entry.dart';
 import '../../core/constants/app_constants.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../core/services/notification_service.dart';
+import '../../core/services/sync_service.dart';
 
 final plannerProvider =
     StateNotifierProvider<PlannerNotifier, List<PlannerEntry>>((ref) {
@@ -48,6 +49,14 @@ class PlannerNotifier extends StateNotifier<List<PlannerEntry>> {
     );
     await _box?.put(entry.id, entry);
     await NotificationService.instance.scheduleTaskReminder(entry);
+    
+    // Queue offline-first background sync
+    SyncService.instance.queueUpsert(
+      table: 'planner_entries',
+      id: entry.id,
+      data: entry.toMap(),
+    );
+    
     _refresh();
   }
 
@@ -65,12 +74,26 @@ class PlannerNotifier extends StateNotifier<List<PlannerEntry>> {
       await NotificationService.instance.scheduleTaskReminder(updated);
     }
     
+    // Queue offline-first background sync
+    SyncService.instance.queueUpsert(
+      table: 'planner_entries',
+      id: updated.id,
+      data: updated.toMap(),
+    );
+    
     _refresh();
   }
 
   Future<void> deleteTask(String id) async {
     await _box?.delete(id);
     await NotificationService.instance.cancelReminder(id);
+    
+    // Queue deletion
+    SyncService.instance.queueDelete(
+      table: 'planner_entries',
+      id: id,
+    );
+    
     _refresh();
   }
 

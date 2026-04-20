@@ -72,6 +72,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 48),
+                
+                // ── App Logo ────────────────────────────────────────
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset('assets/images/hilway_logo.png', height: 40),
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
 
                 // ── Header ──────────────────────────────────────────
                 const Text('Welcome back', style: AppTextStyles.displayMedium),

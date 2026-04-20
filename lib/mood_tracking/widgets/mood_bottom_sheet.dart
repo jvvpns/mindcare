@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
@@ -132,9 +133,10 @@ class _MoodBottomSheetState extends ConsumerState<MoodBottomSheet> {
                         ),
                         child: Column(
                           children: [
-                            Text(
-                              AppConstants.moodEmojis[index],
-                              style: const TextStyle(fontSize: 32),
+                            Image.asset(
+                              AppConstants.moodAnimatedAssets[index],
+                              width: 44,
+                              height: 44,
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -225,6 +227,24 @@ class _MoodBottomSheetState extends ConsumerState<MoodBottomSheet> {
                 elevation: 0,
               ),
               child: const Text('Save Log', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+
+            const SizedBox(height: 12),
+            
+            // ── Journal Nudge ───────────────────────────────────────────────
+            TextButton.icon(
+              onPressed: () {
+                context.pop(); // Close sheet
+                context.push('/journal/new'); // Go to journal
+              },
+              icon: PhosphorIcon(PhosphorIconsRegular.book, size: 18),
+              label: Text(
+                "Write more in your Journal", 
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.textSecondary,
+                  decoration: TextDecoration.underline,
+                )
+              ),
             ),
           ],
         ),

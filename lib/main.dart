@@ -7,6 +7,8 @@ import 'core/services/supabase_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
+import 'core/services/safety_service.dart';
+import 'core/services/burnout_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +24,10 @@ void main() async {
 
   // ── Notifications ─────────────────────────────────────────────────────────
   await NotificationService.instance.init();
+
+  // ── AI Services (TFLite Models) ───────────────────────────────────────────
+  await SafetyService.instance.init();
+  await BurnoutService.instance.init();
 
   runApp(
     const ProviderScope(
