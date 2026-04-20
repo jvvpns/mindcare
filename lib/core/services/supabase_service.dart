@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hilway/core/constants/app_constants.dart';
 
@@ -38,10 +39,15 @@ class SupabaseService {
     required String email,
     required String password,
   }) async {
-    return await client.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
+    try {
+      return await client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+    } catch (e) {
+      debugPrint('SupabaseService: signIn error: $e');
+      rethrow;
+    }
   }
 
   Future<void> signOut() async {

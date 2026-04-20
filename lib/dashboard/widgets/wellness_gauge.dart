@@ -121,19 +121,35 @@ class _GaugePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height);
     final radius = size.width / 2 - 10;
 
-    // ── Background Arc ───────────────────────────────────────────────────────
+    // ── Background Arc (With Inner Shadow depth) ──────────────────────────
     final bgPaint = Paint()
       ..color = AppColors.surfaceSecondary.withValues(alpha: 0.15)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 10
       ..strokeCap = StrokeCap.round;
 
+    // Draw the main background
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       math.pi,
       math.pi,
       false,
       bgPaint,
+    );
+    
+    // Draw a subtle "inner depth" highlight
+    final depthPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.1)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius - 4),
+      math.pi,
+      math.pi,
+      false,
+      depthPaint,
     );
 
     // ── Active Gradient Arc ──────────────────────────────────────────────────

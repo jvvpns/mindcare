@@ -8,7 +8,13 @@ final shiftProvider = StateNotifierProvider<ShiftNotifier, List<ShiftTask>>((ref
 
 class ShiftNotifier extends StateNotifier<List<ShiftTask>> {
   ShiftNotifier() : super([]) {
+    _init();
+  }
+
+  void _init() {
     _loadTasks();
+    // Watch for external changes
+    HiveService.shiftBox.watch().listen((_) => _loadTasks());
   }
 
   void _loadTasks() {

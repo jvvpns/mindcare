@@ -24,52 +24,62 @@ class PulseState {
       );
 }
 
-final wellnessPulseProvider = Provider<PulseState>((ref) {
-  final assessmentBox = HiveService.assessmentBox;
-  
-  // Get latest burnout prediction
-  final results = assessmentBox.values
-      .where((r) => r.type == 'burnout_prediction')
-      .toList()
-    ..sort((a, b) => b.takenAt.compareTo(a.takenAt));
-
-  if (results.isEmpty) {
-    return PulseState.initial();
-  }
-
-  final latest = results.first;
-  
-  // We use the interpretation to determine the level
-  // AssessmentResult.interpretation looks like: 'Low Burnout Risk'
-  final interpretation = latest.interpretation.toLowerCase();
-  
-  BurnoutLevel level = BurnoutLevel.low;
-  double baseScore = 0.85; // Low risk default needle position
-
-  if (interpretation.contains('high')) {
-    level = BurnoutLevel.high;
-    baseScore = 0.15; // Red zone
-  } else if (interpretation.contains('medium')) {
-    level = BurnoutLevel.medium;
-    baseScore = 0.5; // Amber zone
-  }
-
-  // Adjust score slightly based on the 'totalScore' which stores the confidence %
-  // This makes the needle feel "analogue" and precise.
-  final confidence = latest.totalScore / 100.0;
-  double adjustedScore = baseScore;
-  
-  if (level == BurnoutLevel.low) {
-    // Higher confidence in low risk means even higher resilience
-    adjustedScore = 0.7 + (confidence * 0.25);
-  } else if (level == BurnoutLevel.high) {
-    // Higher confidence in high risk means even lower resilience
-    adjustedScore = 0.3 - (confidence * 0.25);
-  }
-
-  return PulseState(
-    resilienceScore: adjustedScore.clamp(0.05, 0.95),
-    label: latest.interpretation,
-    level: level,
-  );
+final wellnessPulseProvider = StateNotifierProvider<WellnessPulseNotifier, PulseState>((ref) {
+  return WellnessPulseNotifier();
 });
+
+class WellnessPulseNotifier extends StateNotifier<PulseState> {
+  WellnessPulseNotifier() : super(PulseState.initial()) {
+    _init();
+  }
+
+  void _init() {
+    _updateState();
+    // Watch for any changes in the assessment box and update the gauge
+    HiveService.assessmentBox.watch().listen((_) => _updateState());
+  }
+
+  void _updateState() {
+    final assessmentBox = HiveService.assessmentBox;
+    
+    // Get latest burnout prediction
+    final results = assessmentBox.values
+        .where((r) => r.type == 'burnout_prediction')
+        .toList()
+      ..sort((a, b) => b.takenAt.compareTo(a.takenAt));
+
+    if (results.isEmpty) {
+      state = PulseState.initial();
+      return;
+    }
+
+    final latest = results.first;
+    final interpretation = latest.interpretation.toLowerCase();
+    
+    BurnoutLevel level = BurnoutLevel.low;
+    double baseScore = 0.85;
+
+    if (interpretation.contains('high')) {
+      level = BurnoutLevel.high;
+      baseScore = 0.15;
+    } else if (interpretation.contains('medium')) {
+      level = BurnoutLevel.medium;
+      baseScore = 0.5;
+    }
+
+    final confidence = latest.totalScore / 100.0;
+    double adjustedScore = baseScore;
+    
+    if (level == BurnoutLevel.low) {
+      adjustedScore = 0.7 + (confidence * 0.25);
+    } else if (level == BurnoutLevel.high) {
+      adjustedScore = 0.3 - (confidence * 0.25);
+    }
+
+    state = PulseState(
+      resilienceScore: adjustedScore.clamp(0.05, 0.95),
+      label: latest.interpretation,
+      level: level,
+    );
+  }
+}

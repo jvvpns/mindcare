@@ -132,6 +132,7 @@ class SyncService {
       final client = SupabaseService.client;
 
       // 1. Mood Logs
+      debugPrint('SyncService: Pulling mood_logs...');
       final moods = await client.from('mood_logs').select().eq('user_id', userId);
       for (var map in moods) {
         final log = MoodLog.fromMap(map);
@@ -139,6 +140,7 @@ class SyncService {
       }
 
       // 2. Stress Ratings
+      debugPrint('SyncService: Pulling stress_ratings...');
       final stress = await client.from('stress_ratings').select().eq('user_id', userId);
       for (var map in stress) {
         final rating = StressRating.fromMap(map);
@@ -146,6 +148,7 @@ class SyncService {
       }
 
       // 3. Journal Entries
+      debugPrint('SyncService: Pulling journal_entries...');
       final journals = await client.from('journal_entries').select().eq('user_id', userId);
       for (var map in journals) {
         final entry = JournalEntry.fromMap(map);
@@ -153,34 +156,39 @@ class SyncService {
       }
 
       // 4. Planner Entries
+      debugPrint('SyncService: Pulling planner_entries...');
       final tasks = await client.from('planner_entries').select().eq('user_id', userId);
       for (var map in tasks) {
         final task = PlannerEntry.fromMap(map);
         await HiveService.plannerBox.put(task.id, task);
       }
 
-      // 4. Assessment Results
+      // 5. Assessment Results
+      debugPrint('SyncService: Pulling assessment_results...');
       final assessments = await client.from('assessment_results').select().eq('user_id', userId);
       for (var map in assessments) {
         final res = AssessmentResult.fromMap(map);
         await HiveService.assessmentBox.put(res.id, res);
       }
 
-      // 5. Refuel Logs
+      // 6. Refuel Logs
+      debugPrint('SyncService: Pulling refuel_logs...');
       final refuels = await client.from('refuel_logs').select().eq('user_id', userId);
       for (var map in refuels) {
         final log = RefuelLog.fromMap(map);
         await HiveService.refuelBox.put(log.id, log);
       }
 
-      // 6. Chat Sessions
+      // 7. Chat Sessions
+      debugPrint('SyncService: Pulling chat_sessions...');
       final sessions = await client.from('chat_sessions').select().eq('user_id', userId);
       for (var map in sessions) {
         final session = ChatSession.fromMap(map);
         await HiveService.chatSessionBox.put(session.id, session);
       }
 
-      // 7. Chat Messages
+      // 8. Chat Messages
+      debugPrint('SyncService: Pulling chat_messages...');
       final messages = await client.from('chat_messages').select().eq('user_id', userId);
       for (var map in messages) {
         final msg = ChatMessage.fromMap(map);

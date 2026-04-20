@@ -83,6 +83,58 @@ class DashboardHeader extends ConsumerWidget {
     }
   }
 
+  // Maps current emotion to a contrasting color
+  Color _getKellyCardColor(String emotion) {
+    switch (emotion.toLowerCase()) {
+      case 'default':
+      case 'energetic':
+        // Orb is white/grey -> Card becomes Soft Pastel Blue
+        return AppColors.emotionToColors['happy']![0].withValues(alpha: 0.85);
+      case 'happy':
+        // Orb is Sky Blue -> Card becomes Soft Peach/Coral
+        return AppColors.emotionToColors['concerned']![0].withValues(alpha: 0.85);
+      case 'calm':
+        // Orb is Teal -> Card becomes Soft Lavender
+        return AppColors.emotionToColors['sad']![0].withValues(alpha: 0.85);
+      case 'sad':
+        // Orb is Lavender -> Card becomes Soft Teal
+        return AppColors.emotionToColors['calm']![0].withValues(alpha: 0.85);
+      case 'excited':
+        // Orb is Gold -> Card becomes Soft Pink
+        return AppColors.emotionToColors['surprised']![0].withValues(alpha: 0.85);
+      case 'concerned':
+        // Orb is Peach -> Card becomes Soft Blue
+        return AppColors.emotionToColors['happy']![0].withValues(alpha: 0.85);
+      case 'surprised':
+        // Orb is Pink -> Card becomes Soft Gold
+        return AppColors.emotionToColors['excited']![0].withValues(alpha: 0.85);
+      default:
+        return AppColors.emotionToColors['happy']![0].withValues(alpha: 0.85);
+    }
+  }
+
+  Color _getKellyCardBorderColor(String emotion) {
+    switch (emotion.toLowerCase()) {
+      case 'default':
+      case 'energetic':
+        return AppColors.emotionToColors['happy']![1].withValues(alpha: 0.4);
+      case 'happy':
+        return AppColors.emotionToColors['concerned']![1].withValues(alpha: 0.4);
+      case 'calm':
+        return AppColors.emotionToColors['sad']![1].withValues(alpha: 0.4);
+      case 'sad':
+        return AppColors.emotionToColors['calm']![1].withValues(alpha: 0.4);
+      case 'excited':
+        return AppColors.emotionToColors['surprised']![1].withValues(alpha: 0.4);
+      case 'concerned':
+        return AppColors.emotionToColors['happy']![1].withValues(alpha: 0.4);
+      case 'surprised':
+        return AppColors.emotionToColors['excited']![1].withValues(alpha: 0.4);
+      default:
+        return AppColors.emotionToColors['happy']![1].withValues(alpha: 0.4);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final todayMood = ref.watch(todayMoodProvider);
@@ -106,31 +158,49 @@ class DashboardHeader extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── App Brand Pill ────────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset('assets/images/hilway_logo.png', height: 18),
-              const SizedBox(width: 8),
-              Text(
-                "HILWAY",
-                style: AppTextStyles.labelSmall.copyWith(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                  color: AppColors.primary.withValues(alpha: 0.8),
+        // ── App Brand & Tagline ───────────────────────────────────
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset('assets/images/hilway_logo.png', height: 28),
+                  const SizedBox(width: 10),
+                  Text(
+                    "HILWAY",
+                    style: AppTextStyles.headingSmall.copyWith(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: Text(
+                "Holistic Inner Life Well-being and AI for You",
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.1,
+                  color: AppColors.textSecondary.withValues(alpha: 0.9),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+        const SizedBox(height: 28),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -185,42 +255,82 @@ class DashboardHeader extends ConsumerWidget {
         const SizedBox(height: 24),
         GestureDetector(
           onTap: () => ref.read(kellyPokedMessageProvider.notifier).poke(),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(width: 56, height: 56, child: Center(child: KellyMiniOrb(emotion: effectiveEmotion, size: 48))),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Builder(
+                builder: (context) {
+                  final bgColor = _getKellyCardColor(effectiveEmotion);
+                  final borderColor = _getKellyCardBorderColor(effectiveEmotion);
+                  
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: borderColor, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: borderColor.withValues(alpha: 0.15),
+                          blurRadius: 16,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // ── Glowing Orb (No separate background circle) ─────────
+                        SizedBox(
+                          width: 60,
+                          height: 60,
+                          child: Center(
+                            child: KellyMiniOrb(emotion: effectiveEmotion, size: 54),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // ── Message Content ──────────────────────────────
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("Kelly", style: AppTextStyles.labelMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                              const SizedBox(width: 6),
-                              Icon(Icons.auto_awesome, size: 12, color: AppColors.primary.withValues(alpha: 0.5)),
+                              Row(
+                                children: [
+                                  Text(
+                                    "Kelly",
+                                    style: AppTextStyles.labelMedium.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Icon(
+                                    Icons.auto_awesome,
+                                    size: 14,
+                                    color: AppColors.primary, 
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                message,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.textPrimary.withValues(alpha: 0.9),
+                                  height: 1.5,
+                                ),
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          Text(message, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textPrimary, height: 1.5)),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
+                  );
+                }
               ),
-            ],
+            ),
           ),
         ),
       ],

@@ -74,32 +74,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 48),
                 
                 // ── App Logo ────────────────────────────────────────
-                Align(
-                  alignment: Alignment.centerLeft,
+                // ── App Logo ────────────────────────────────────────
+                Center(
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          blurRadius: 15,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
-                    child: Image.asset('assets/images/hilway_logo.png', height: 40),
+                    child: Image.asset('assets/images/hilway_logo.png', height: 80),
                   ),
                 ),
                 
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
                 // ── Header ──────────────────────────────────────────
-                const Text('Welcome back', style: AppTextStyles.displayMedium),
-                const SizedBox(height: 6),
+                const Text(
+                  'Welcome back', 
+                  style: AppTextStyles.displayMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
                 Text(
                   'Sign in to your HILWAY account',
+                  textAlign: TextAlign.center,
                   style: AppTextStyles.bodyLarge.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -161,6 +166,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         )
                       : const Text('Sign in'),
+                ),
+
+                const SizedBox(height: 16),
+                
+                // ── Bypass Button (Temporary) ──────────────────────────
+                TextButton(
+                  onPressed: authState.isLoading ? null : () async {
+                    await ref.read(authProvider.notifier).skipAuth();
+                    if (mounted) context.go(AppRoutes.dashboard);
+                  },
+                  child: const Text('Skip for now (Debug Mode)'),
                 ),
 
                 const SizedBox(height: 16),

@@ -249,31 +249,35 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 const SizedBox(height: 12),
                 
                 // ── App Logo ────────────────────────────────────────
-                Align(
-                  alignment: Alignment.centerLeft,
+                Center(
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          blurRadius: 15,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
-                    child: Image.asset('assets/images/hilway_logo.png', height: 40),
+                    child: Image.asset('assets/images/hilway_logo.png', height: 80),
                   ),
                 ),
                 
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
-                const Text('Create account', style: AppTextStyles.displayMedium),
-                const SizedBox(height: 6),
+                const Text(
+                  'Create account', 
+                  style: AppTextStyles.displayMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
                 Text(
                   'Join HILWAY and start your wellness journey',
+                  textAlign: TextAlign.center,
                   style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 32),

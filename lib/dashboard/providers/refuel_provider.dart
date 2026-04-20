@@ -23,10 +23,10 @@ class RefuelNotifier extends StateNotifier<RefuelLog?> {
 
   Future<void> _loadToday() async {
     _box = Hive.box<RefuelLog>(AppConstants.boxRefuelLogs);
-    final now = DateTime.now();
-    final todayKey = _dateToKey(now);
+    _refresh();
     
-    state = _box.get(todayKey) ?? RefuelLog(id: _uuid.v4(), date: now);
+    // Listen for external changes (sync, etc.)
+    _box.watch().listen((_) => _refresh());
     
     // Ensure daily reminders are scheduled
     NotificationService.instance.scheduleDailyRefuelReminders();
@@ -34,9 +34,14 @@ class RefuelNotifier extends StateNotifier<RefuelLog?> {
     // Refresh state periodically to update 'missedMeals' based on current time
     Stream.periodic(const Duration(minutes: 5)).listen((_) {
       if (mounted) {
-        state = state?.copyWith(); // Trigger rebuild
+        _refresh();
       }
     });
+  }
+
+  void _refresh() {
+    final todayKey = _dateToKey(DateTime.now());
+    state = _box.get(todayKey) ?? RefuelLog(id: _uuid.v4(), date: DateTime.now());
   }
 
   String _dateToKey(DateTime date) => 

@@ -22,8 +22,10 @@ class PlannerNotifier extends StateNotifier<List<PlannerEntry>> {
 
   Future<void> _load() async {
     _box = Hive.box<PlannerEntry>(AppConstants.boxPlannerEntries);
-    state = _box!.values.toList()
-      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    _refresh();
+    
+    // Listen for external changes (sync, etc.)
+    _box!.watch().listen((_) => _refresh());
   }
 
   Future<void> addTask({
