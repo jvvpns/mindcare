@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -26,6 +27,7 @@ import '../widgets/reaction_log_sheet.dart';
 import '../../core/providers/debug_provider.dart';
 import '../../shared/widgets/hilway_background.dart';
 import '../../dashboard/providers/refuel_provider.dart';
+import '../../shared/widgets/responsive_wrapper.dart';
 
 class ChatbotScreen extends ConsumerStatefulWidget {
   const ChatbotScreen({super.key});
@@ -49,6 +51,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
+    HapticFeedback.lightImpact();
     // Send the message through the provider (handles Gemini & sentiment)
     ref.read(chatMessagesProvider.notifier).sendMessage(text);
     _messageController.clear();
@@ -182,224 +185,226 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
       backgroundColor: Colors.transparent,
       body: HilwayBackground(
         child: SafeArea(
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                // ── Header: Glassmorphic Bar ──────────────────────────────
-                ClipRRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                    child: Container(
-                      color: Colors.white.withValues(alpha: 0.92),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        child: Row(
-                          children: [
-                            IconButton(
-                              icon: const PhosphorIcon(PhosphorIconsRegular.x, color: AppColors.textPrimary),
-                              onPressed: () {
-                                if (GoRouter.of(context).canPop()) {
-                                  context.pop();
-                                } else {
-                                  context.go(AppRoutes.dashboard);
-                                }
-                              },
-                            ),
-                            const SizedBox(width: 4),
-                            // ── Badges Container ─────────────────────────────────────
-                            Expanded(
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    // ── Privacy Badge ───────────────────────────────────────
-                                    InkWell(
-                                      onTap: _showPrivacyInfo,
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.surfaceSecondary,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            const PhosphorIcon(PhosphorIconsRegular.shieldCheck, size: 14, color: AppColors.primary),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              'Private & Encrypted',
-                                              style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    // ── Energy Badge ────────────────────────────────────────
-                                    InkWell(
-                                      onTap: _showEnergyInfo,
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: isEnergyLow 
-                                            ? AppColors.error.withValues(alpha: 0.1) 
-                                            : AppColors.surfaceSecondary,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: isEnergyLow ? AppColors.error.withValues(alpha: 0.2) : Colors.transparent,
-                                            width: 1,
+          child: ResponsiveWrapper(
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                  // ── Header: Glassmorphic Bar ──────────────────────────────
+                  ClipRRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                      child: Container(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          child: Row(
+                            children: [
+                              IconButton(
+                                icon: const PhosphorIcon(PhosphorIconsRegular.x, color: AppColors.textPrimary),
+                                onPressed: () {
+                                  if (GoRouter.of(context).canPop()) {
+                                    context.pop();
+                                  } else {
+                                    context.go(AppRoutes.dashboard);
+                                  }
+                                },
+                              ),
+                              const SizedBox(width: 4),
+                              // ── Badges Container ─────────────────────────────────────
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // ── Privacy Badge ───────────────────────────────────────
+                                      InkWell(
+                                        onTap: _showPrivacyInfo,
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.surfaceSecondary,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              const PhosphorIcon(PhosphorIconsRegular.shieldCheck, size: 14, color: AppColors.primary),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'Private & Encrypted',
+                                                style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        child: Row(
-                                          children: [
-                                            PhosphorIcon(
-                                              PhosphorIconsRegular.lightning, 
-                                              size: 14, 
-                                              color: isEnergyLow ? AppColors.error : AppColors.accent,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      // ── Energy Badge ────────────────────────────────────────
+                                      InkWell(
+                                        onTap: _showEnergyInfo,
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: isEnergyLow 
+                                              ? AppColors.error.withValues(alpha: 0.1) 
+                                              : AppColors.surfaceSecondary,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: isEnergyLow ? AppColors.error.withValues(alpha: 0.2) : Colors.transparent,
+                                              width: 1,
                                             ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              'Energy: $energyRemaining',
-                                              style: AppTextStyles.labelSmall.copyWith(
-                                                color: isEnergyLow ? AppColors.error : AppColors.textPrimary,
-                                                fontWeight: isEnergyLow ? FontWeight.bold : FontWeight.normal,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              PhosphorIcon(
+                                                PhosphorIconsRegular.lightning, 
+                                                size: 14, 
+                                                color: isEnergyLow ? AppColors.error : AppColors.accent,
                                               ),
-                                            ),
-                                          ],
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                'Energy: $energyRemaining',
+                                                style: AppTextStyles.labelSmall.copyWith(
+                                                  color: isEnergyLow ? AppColors.error : AppColors.textPrimary,
+                                                  fontWeight: isEnergyLow ? FontWeight.bold : FontWeight.normal,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            IconButton(
-                              tooltip: 'New Chat',
-                              icon: const PhosphorIcon(PhosphorIconsRegular.pencilSimple, color: AppColors.textSecondary),
-                              onPressed: () {
-                                ref.read(currentSessionIdProvider.notifier).state = null;
-                                _messageController.clear();
-                              },
-                            ),
-                            IconButton(
-                              tooltip: 'History',
-                              icon: const PhosphorIcon(PhosphorIconsRegular.clock, color: AppColors.textSecondary),
-                              onPressed: () => context.push(AppRoutes.chatHistory),
-                            ),
-                            IconButton(
-                              tooltip: 'How to use',
-                              icon: const PhosphorIcon(PhosphorIconsRegular.question, color: AppColors.textSecondary),
-                              onPressed: () => ref.read(chatTutorialProvider.notifier).showTutorial(),
-                            ),
-                            if (ref.watch(debugModeProvider))
+                              const SizedBox(width: 4),
                               IconButton(
-                                tooltip: 'Reaction Log',
-                                icon: const PhosphorIcon(PhosphorIconsRegular.bug, color: AppColors.error),
-                                onPressed: () => ReactionLogSheet.show(context),
+                                tooltip: 'New Chat',
+                                icon: const PhosphorIcon(PhosphorIconsRegular.pencilSimple, color: AppColors.textSecondary),
+                                onPressed: () {
+                                  ref.read(currentSessionIdProvider.notifier).state = null;
+                                  _messageController.clear();
+                                },
                               ),
-                          ],
+                              IconButton(
+                                tooltip: 'History',
+                                icon: const PhosphorIcon(PhosphorIconsRegular.clock, color: AppColors.textSecondary),
+                                onPressed: () => context.push(AppRoutes.chatHistory),
+                              ),
+                              IconButton(
+                                tooltip: 'How to use',
+                                icon: const PhosphorIcon(PhosphorIconsRegular.question, color: AppColors.textSecondary),
+                                onPressed: () => ref.read(chatTutorialProvider.notifier).showTutorial(),
+                              ),
+                              if (ref.watch(debugModeProvider))
+                                IconButton(
+                                  tooltip: 'Reaction Log',
+                                  icon: const PhosphorIcon(PhosphorIconsRegular.bug, color: AppColors.error),
+                                  onPressed: () => ReactionLogSheet.show(context),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-
-                // ── Kelly Orb Mascot ──────────────────────────────────────
-                Hero(
-                  tag: 'kelly_orb_hero',
-                  child: KellyOrbMascot(emotion: currentEmotion, isThinking: isLoading),
-                ),
-                const SizedBox(height: 8),
-            
-            // ── Chat List Area ──────────────────────────────────────────
-            Expanded(
-              child: isInitializing
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CircularProgressIndicator(),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Kelly is getting ready...',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
+  
+                  // ── Kelly Orb Mascot ──────────────────────────────────────
+                  Hero(
+                    tag: 'kelly_orb_hero',
+                    child: KellyOrbMascot(emotion: currentEmotion, isThinking: isLoading),
+                  ),
+                  const SizedBox(height: 8),
+              
+              // ── Chat List Area ──────────────────────────────────────────
+              Expanded(
+                child: isInitializing
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Kelly is getting ready...',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                itemCount: messages.length + (isLoading ? 1 : 0),
-                itemBuilder: (context, index) {
-                  // Typing Indicator is the last item if loading
-                  if (isLoading && index == messages.length) {
-                    return const TypingIndicator();
-                  }
-
-                  final message = messages[index];
-                  // Slide + fade entrance for Kelly's replies
-                  if (!message.isUser) {
-                    return TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      duration: const Duration(milliseconds: 350),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, value, child) => Opacity(
-                        opacity: value,
-                        child: Transform.translate(
-                          offset: Offset(0, 18 * (1 - value)),
-                          child: child,
+                          ],
                         ),
-                      ),
-                      child: ChatMessageBubble(message: message),
-                    );
-                  }
-                  return ChatMessageBubble(message: message);
-                },
-              ),
-            ),
-            
-            // ── Crisis Bar (persistent once triggered) ─────────────────────
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
-              transitionBuilder: (child, animation) => SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 1),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeOutCubic,
-                )),
-                child: FadeTransition(opacity: animation, child: child),
-              ),
-              child: isCrisisActive
-                  ? const PriorityCrisisBar(key: ValueKey('crisis_bar'))
-                  : const SizedBox.shrink(key: ValueKey('crisis_bar_hidden')),
-            ),
-
-            // ── Quick Replies (Context Aware) ───────────────────────────────
-            if (!isLoading && messages.isNotEmpty)
-              AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                child: _buildQuickReplies(currentEmotion, todayMood, refuelLog, refuelNotifier),
-              ),
-            
-                  // ── Input Area ──────────────────────────────────────────────────
-                  _buildInputArea(hasEnergy),
-                ],
+                      )
+                    : ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  itemCount: messages.length + (isLoading ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    // Typing Indicator is the last item if loading
+                    if (isLoading && index == messages.length) {
+                      return const TypingIndicator();
+                    }
+  
+                    final message = messages[index];
+                    // Slide + fade entrance for Kelly's replies
+                    if (!message.isUser) {
+                      return TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        duration: const Duration(milliseconds: 350),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, value, child) => Opacity(
+                          opacity: value,
+                          child: Transform.translate(
+                            offset: Offset(0, 18 * (1 - value)),
+                            child: child,
+                          ),
+                        ),
+                        child: ChatMessageBubble(message: message),
+                      );
+                    }
+                    return ChatMessageBubble(message: message);
+                  },
+                ),
               ),
               
-              // ── Tutorial Overlay ──────────────────────────────────────
-              if (showTutorial) const ChatTutorialOverlay(),
-            ],
+              // ── Crisis Bar (persistent once triggered) ─────────────────────
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 400),
+                transitionBuilder: (child, animation) => SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  )),
+                  child: FadeTransition(opacity: animation, child: child),
+                ),
+                child: isCrisisActive
+                    ? const PriorityCrisisBar(key: ValueKey('crisis_bar'))
+                    : const SizedBox.shrink(key: ValueKey('crisis_bar_hidden')),
+              ),
+  
+              // ── Quick Replies (Context Aware) ───────────────────────────────
+              if (!isLoading && messages.isNotEmpty)
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  child: _buildQuickReplies(currentEmotion, todayMood, refuelLog, refuelNotifier),
+                ),
+              
+                    // ── Input Area ──────────────────────────────────────────────────
+                    _buildInputArea(hasEnergy),
+                  ],
+                ),
+                
+                // ── Tutorial Overlay ──────────────────────────────────────
+                if (showTutorial) const ChatTutorialOverlay(),
+              ],
+            ),
           ),
         ),
       ),
@@ -477,8 +482,10 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
       shadowColor: AppColors.primary.withValues(alpha: 0.1),
       onPressed: () {
         if (openRoute != null) {
+          HapticFeedback.selectionClick();
           context.go(openRoute);
         } else {
+          HapticFeedback.selectionClick();
           // Send the chip label as a message to Kelly
           _messageController.text = label;
           _sendMessage();

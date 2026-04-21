@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hilway/core/constants/app_colors.dart';
 import 'package:hilway/core/constants/app_text_styles.dart';
 import 'package:hilway/self_assessment/providers/self_assessment_provider.dart';
+import 'package:hilway/shared/widgets/responsive_wrapper.dart';
 
 class BurnoutResultScreen extends ConsumerWidget {
   const BurnoutResultScreen({super.key});
@@ -55,88 +56,90 @@ class BurnoutResultScreen extends ConsumerWidget {
           },
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Donut chart or massive score representation
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: riskColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: riskColor.withValues(alpha: 0.3)),
+      body: ResponsiveWrapper(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Donut chart or massive score representation
+              Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: riskColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: riskColor.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      interpLower.contains('high')
+                          ? Icons.warning_amber_rounded 
+                          : Icons.favorite_border_rounded,
+                      size: 64,
+                      color: riskColor,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      riskTitle,
+                      style: AppTextStyles.headingMedium.copyWith(color: riskColor),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Confidence: ${result.totalScore.toStringAsFixed(1)}%",
+                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
               ),
-              child: Column(
-                children: [
-                  Icon(
-                    interpLower.contains('high')
-                        ? Icons.warning_amber_rounded 
-                        : Icons.favorite_border_rounded,
-                    size: 64,
-                    color: riskColor,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    riskTitle,
-                    style: AppTextStyles.headingMedium.copyWith(color: riskColor),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Confidence: ${result.totalScore.toStringAsFixed(1)}%",
-                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
+              
+              const SizedBox(height: 32),
+  
+              const Text(
+                'What should you do next?',
+                style: AppTextStyles.headingSmall,
               ),
-            ),
-            
-            const SizedBox(height: 32),
-
-            const Text(
-              'What should you do next?',
-              style: AppTextStyles.headingSmall,
-            ),
-            const SizedBox(height: 16),
-
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  )
-                ],
+              const SizedBox(height: 16),
+  
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: Text(
+                  copingAdvice,
+                  style: AppTextStyles.bodyLarge.copyWith(height: 1.5),
+                ),
               ),
-              child: Text(
-                copingAdvice,
-                style: AppTextStyles.bodyLarge.copyWith(height: 1.5),
+  
+              const SizedBox(height: 32),
+  
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(assessmentStateProvider.notifier).reset();
+                  context.go('/chat'); // Talk to Kelly — matches AppRoutes.chatbot
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: Text(
+                  'Talk to Kelly',
+                  style: AppTextStyles.buttonLarge.copyWith(color: Colors.white),
+                ),
               ),
-            ),
-
-            const SizedBox(height: 32),
-
-            ElevatedButton(
-              onPressed: () {
-                ref.read(assessmentStateProvider.notifier).reset();
-                context.go('/chat'); // Talk to Kelly — matches AppRoutes.chatbot
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: Text(
-                'Talk to Kelly',
-                style: AppTextStyles.buttonLarge.copyWith(color: Colors.white),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

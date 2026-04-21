@@ -5,6 +5,7 @@ class AppConstants {
 
   static const String appName    = 'HILWAY';
   static const String appTagline = 'Your holistic mental health companion.';
+  static const String appVersion = '1.0.1'; // ── Internal Version Control ──
 
   // ── Supabase ──────────────────────────────────────────────────────────────
   static String get supabaseUrl     => dotenv.get('SUPABASE_URL');
@@ -13,6 +14,17 @@ class AppConstants {
   // ── Gemini ────────────────────────────────────────────────────────────────
   static String get geminiApiKey    => dotenv.get('GEMINI_API_KEY');
   static const String geminiModel   = 'gemini-3.1-flash-lite-preview';
+
+  // ── Backend ───────────────────────────────────────────────────────────────
+  static String get backendUrl {
+    final url = dotenv.get('BACKEND_URL', fallback: '');
+    if (url.isNotEmpty) return url;
+    
+    // Auto-detect local development endpoint
+    if (const bool.fromEnvironment('dart.library.js_util')) return 'http://127.0.0.1:8003';
+    // 10.0.2.2 is the special alias to your host loopback interface in Android Emulator
+    return 'http://10.0.2.2:8003'; 
+  }
 
   // ── Hive Box Names ────────────────────────────────────────────────────────
   static const String boxMoodLogs       = 'mood_logs';
@@ -52,6 +64,8 @@ class AppConstants {
   static const int hiveTypeChatSession      = 6;
   static const int hiveTypeShiftTask       = 8;
   static const int hiveTypeRefuelLog       = 9;
+  static const int hiveTypeSyncState       = 10;
+  static const int hiveTypeSyncJob         = 11;
 
 
   // ── App Config ────────────────────────────────────────────────────────────

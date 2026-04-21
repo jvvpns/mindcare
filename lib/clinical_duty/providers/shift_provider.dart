@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/shift_task.dart';
 import '../../core/services/hive_service.dart';
+import '../../core/services/sync_service.dart';
 
 final shiftProvider = StateNotifierProvider<ShiftNotifier, List<ShiftTask>>((ref) {
   return ShiftNotifier();
@@ -45,6 +46,9 @@ class ShiftNotifier extends StateNotifier<List<ShiftTask>> {
     final task = ShiftTask(title: title, category: category);
     await HiveService.shiftBox.put(task.id, task);
     state = [...state, task];
+    
+    // Sync to cloud
+    SyncService.instance.queueUpsert(table: 'shift_tasks', id: task.id, data: task.toMap());
   }
 
   Future<void> toggleDone(String id) async {
@@ -57,12 +61,18 @@ class ShiftNotifier extends StateNotifier<List<ShiftTask>> {
         for (final t in state)
           if (t.id == id) t.copyWith(isDone: task.isDone) else t
       ];
+      
+      // Sync to cloud
+      SyncService.instance.queueUpsert(table: 'shift_tasks', id: task.id, data: task.toMap());
     }
   }
 
   Future<void> deleteTask(String id) async {
     await HiveService.shiftBox.delete(id);
     state = state.where((t) => t.id != id).toList();
+    
+    // Sync deletion to cloud
+    SyncService.instance.queueDelete(table: 'shift_tasks', id: id);
   }
 
   Future<void> resetProgress() async {

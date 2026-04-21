@@ -9,6 +9,7 @@ import '../../core/constants/app_constants.dart';
 import '../../shared/widgets/hilway_background.dart';
 import '../providers/mood_provider.dart';
 import '../../chatbot/providers/kelly_state_provider.dart';
+import '../../shared/widgets/responsive_wrapper.dart';
 
 class MoodTrackingScreen extends ConsumerWidget {
   const MoodTrackingScreen({super.key});
@@ -30,35 +31,37 @@ class MoodTrackingScreen extends ConsumerWidget {
       body: HilwayBackground(
         emotion: effectiveEmotion,
         child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Stats Summary ─────────────────────────────────────────────
-              _buildStatsSummary(moodLogs),
+          child: ResponsiveWrapper(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Stats Summary ─────────────────────────────────────────────
+                _buildStatsSummary(moodLogs),
 
-              const Padding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: Text(
-                  'Recent Reflections',
-                  style: AppTextStyles.headingSmall,
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(24, 24, 24, 16),
+                  child: Text(
+                    'Recent Reflections',
+                    style: AppTextStyles.headingSmall,
+                  ),
                 ),
-              ),
 
-              // ── Mood History List ─────────────────────────────────────────
-              Expanded(
-                child: moodLogs.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: moodLogs.length,
-                        itemBuilder: (context, index) {
-                          final log = moodLogs[index];
-                          return _buildMoodLogCard(log);
-                        },
-                      ),
-              ),
-            ],
+                // ── Mood History List ─────────────────────────────────────────
+                Expanded(
+                  child: moodLogs.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: moodLogs.length,
+                          itemBuilder: (context, index) {
+                            final log = moodLogs[index];
+                            return _buildMoodLogCard(log);
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

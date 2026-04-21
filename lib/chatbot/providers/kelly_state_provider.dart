@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/providers/burnout_provider.dart';
-import '../../core/services/burnout_service.dart';
+import '../../core/models/burnout_risk.dart';
 import '../../mood_tracking/providers/mood_provider.dart';
 
 /// Holds the current emotion state of Kelly in the chatbot screen.

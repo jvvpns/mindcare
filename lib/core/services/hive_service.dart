@@ -10,6 +10,7 @@ import 'package:hilway/core/models/assessment_result.dart';
 import 'package:hilway/core/models/journal_entry.dart';
 import 'package:hilway/clinical_duty/models/shift_task.dart';
 import 'package:hilway/core/models/refuel_log.dart';
+import 'package:hilway/core/models/sync_job.dart';
 
 class HiveService {
   HiveService._();
@@ -32,6 +33,8 @@ class HiveService {
     Hive.registerAdapter(JournalEntryAdapter());
     Hive.registerAdapter(ShiftTaskAdapter());
     Hive.registerAdapter(RefuelLogAdapter());
+    Hive.registerAdapter(SyncStateAdapter());
+    Hive.registerAdapter(SyncJobAdapter());
 
     final encryptionKey = await _getOrCreateEncryptionKey();
     await _openBoxes(encryptionKey);
@@ -80,7 +83,7 @@ class HiveService {
     await Hive.openBox<AssessmentResult>(AppConstants.boxAssessments);
     await Hive.openBox<ShiftTask>(AppConstants.boxShiftTasks);
     await Hive.openBox<RefuelLog>(AppConstants.boxRefuelLogs);
-    await Hive.openBox(AppConstants.boxSyncQueue);
+    await Hive.openBox<SyncJob>(AppConstants.boxSyncQueue);
     await Hive.openBox(AppConstants.boxUserCache);
   }
 

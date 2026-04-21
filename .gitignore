@@ -46,16 +46,35 @@ app.*.map.json
 
 # Unused platforms
 macos/
-web/
 linux/
 windows/
-.env
+
+# ── Python Backend ────────────────────────────────────────────────────────
+backend/__pycache__/
+backend/venv/
+backend/.venv/
+backend/*.pyc
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/instance/
+backend/.webassets-cache
+backend/.env
+backend/models/*.h5
+backend/models/*.pkl
 
 # ── API Keys & Secrets (NEVER commit these) ───────────────────────────────
 .env
 .env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 secrets.dart
 **/secrets/
 google-services.json
 GoogleService-Info.plist
-HILWAY_CONTEXT_AND_ROADMAP.md
+*.p12
+*.jks
+*.keystore
+*.mobileprovision

@@ -12,6 +12,7 @@ import '../../shared/widgets/hilway_card.dart';
 import '../../mood_tracking/providers/mood_provider.dart';
 import '../../journal/providers/journal_provider.dart';
 import '../../chatbot/providers/kelly_state_provider.dart';
+import '../../shared/widgets/responsive_wrapper.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -70,219 +71,224 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               ),
             ),
 
-            SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 80, 24, 40),
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Interactive Date Strip (The Ribbon) ─────────────────────
-                    const SizedBox(height: 10),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      clipBehavior: Clip.none,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: List.generate(7, (index) {
-                          final day = now.subtract(Duration(days: 6 - index));
-                          final isSelected = _isSameDay(day, _selectedDate);
-                          final hasLog = moodLogs.any((l) => _isSameDay(l.loggedAt, day));
-
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 12.0),
-                            child: GestureDetector(
-                              onTap: () => setState(() => _selectedDate = day),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 250),
-                                width: 56,
-                                height: 86,
-                                decoration: BoxDecoration(
-                                  color: isSelected 
-                                      ? AppColors.primary 
-                                      : Colors.white.withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.4),
-                                    width: 1.5,
+            ResponsiveWrapper(
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 80, 24, 40),
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Interactive Date Strip (The Ribbon) ─────────────────────
+                      const SizedBox(height: 10),
+                      Center(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          clipBehavior: Clip.none,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: List.generate(7, (index) {
+                              final day = now.subtract(Duration(days: 6 - index));
+                              final isSelected = _isSameDay(day, _selectedDate);
+                              final hasLog = moodLogs.any((l) => _isSameDay(l.loggedAt, day));
+  
+                              return Padding(
+                                padding: EdgeInsets.only(right: index == 6 ? 0 : 12.0),
+                                child: GestureDetector(
+                                  onTap: () => setState(() => _selectedDate = day),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 250),
+                                    width: 56,
+                                    height: 86,
+                                    decoration: BoxDecoration(
+                                      color: isSelected 
+                                          ? AppColors.primary 
+                                          : Colors.white.withValues(alpha: 0.3),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.4),
+                                        width: 1.5,
+                                      ),
+                                      boxShadow: isSelected ? [
+                                        BoxShadow(
+                                          color: AppColors.primary.withValues(alpha: 0.3),
+                                          blurRadius: 15,
+                                          offset: const Offset(0, 6),
+                                        )
+                                      ] : null,
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          DateFormat('E').format(day).toUpperCase(),
+                                          style: AppTextStyles.labelSmall.copyWith(
+                                            color: isSelected ? Colors.white : AppColors.textTertiary,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          day.day.toString(),
+                                          style: AppTextStyles.headingSmall.copyWith(
+                                            color: isSelected ? Colors.white : AppColors.textPrimary,
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                        if (hasLog)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 6.0),
+                                            child: Image.asset(
+                                              AppConstants.moodAnimatedAssets[moodLogs.firstWhere((l) => _isSameDay(l.loggedAt, day)).moodIndex],
+                                              width: 18,
+                                              height: 18,
+                                            ),
+                                          )
+                                        else
+                                          Container(
+                                            margin: const EdgeInsets.only(top: 6),
+                                            width: 5,
+                                            height: 5,
+                                            decoration: BoxDecoration(
+                                              color: isSelected ? Colors.white : AppColors.primary.withValues(alpha: 0.4),
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
-                                  boxShadow: isSelected ? [
-                                    BoxShadow(
-                                      color: AppColors.primary.withValues(alpha: 0.3),
-                                      blurRadius: 15,
-                                      offset: const Offset(0, 6),
-                                    )
-                                  ] : null,
                                 ),
+                              );
+                            }),
+                          ),
+                        ),
+                      ),
+  
+                      const SizedBox(height: 32),
+                      
+                      // ── Day Summary Section ─────────────────────────────────────
+                      Text(
+                        _isSameDay(_selectedDate, now) ? "Today's Summary" : DateFormat('MMMM d, y').format(_selectedDate),
+                        style: AppTextStyles.labelSmall,
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      HilwayCard(
+                        isGlass: true,
+                        glowColor: selectedMood != null ? AppColors.primary : Colors.transparent,
+                        padding: const EdgeInsets.all(24),
+                        child: Row(
+                          children: [
+                            if (selectedMood != null) ...[
+                              Image.asset(
+                                AppConstants.moodAnimatedAssets[selectedMood.moodIndex],
+                                width: 64,
+                                height: 64,
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
                                 child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      DateFormat('E').format(day).toUpperCase(),
-                                      style: AppTextStyles.labelSmall.copyWith(
-                                        color: isSelected ? Colors.white : AppColors.textTertiary,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                      ),
+                                      "Feeling ${selectedMood.moodLabel}",
+                                      style: AppTextStyles.headingSmall,
                                     ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      day.day.toString(),
-                                      style: AppTextStyles.headingSmall.copyWith(
-                                        color: isSelected ? Colors.white : AppColors.textPrimary,
-                                        fontSize: 18,
-                                      ),
-                                    ),
-                                    if (hasLog)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 6.0),
-                                        child: Image.asset(
-                                          AppConstants.moodAnimatedAssets[moodLogs.firstWhere((l) => _isSameDay(l.loggedAt, day)).moodIndex],
-                                          width: 18,
-                                          height: 18,
-                                        ),
-                                      )
-                                    else
-                                      Container(
-                                        margin: const EdgeInsets.only(top: 6),
-                                        width: 5,
-                                        height: 5,
-                                        decoration: BoxDecoration(
-                                          color: isSelected ? Colors.white : AppColors.primary.withValues(alpha: 0.4),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
                                   ],
                                 ),
                               ),
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-                    
-                    // ── Day Summary Section ─────────────────────────────────────
-                    Text(
-                      _isSameDay(_selectedDate, now) ? "Today's Summary" : DateFormat('MMMM d, y').format(_selectedDate),
-                      style: AppTextStyles.labelSmall,
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    HilwayCard(
-                      isGlass: true,
-                      glowColor: selectedMood != null ? AppColors.primary : Colors.transparent,
-                      padding: const EdgeInsets.all(24),
-                      child: Row(
-                        children: [
-                          if (selectedMood != null) ...[
-                            Image.asset(
-                              AppConstants.moodAnimatedAssets[selectedMood.moodIndex],
-                              width: 64,
-                              height: 64,
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Feeling ${selectedMood.moodLabel}",
-                                    style: AppTextStyles.headingSmall,
-                                  ),
-                                ],
+                            ] else ...[
+                              const Icon(Icons.wb_sunny_outlined, size: 48, color: AppColors.textTertiary),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text("No mood logged", style: AppTextStyles.headingSmall),
+                                    const SizedBox(height: 4),
+                                    Text("Take a moment to check in.", style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ] else ...[
-                            const Icon(Icons.wb_sunny_outlined, size: 48, color: AppColors.textTertiary),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text("No mood logged", style: AppTextStyles.headingSmall),
-                                  const SizedBox(height: 4),
-                                  Text("Take a moment to check in.", style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
-                                ],
-                              ),
-                            ),
+                            ],
                           ],
+                        ),
+                      ),
+  
+                      const SizedBox(height: 32),
+                      
+                      // ── Reflections Section ──────────────────────────────────────
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("DAILY REFLECTIONS", style: AppTextStyles.labelSmall),
+                          if (selectedJournals.isNotEmpty)
+                            Text(
+                              "${selectedJournals.length} entries",
+                              style: AppTextStyles.caption.copyWith(color: AppColors.primary),
+                            ),
                         ],
                       ),
-                    ),
-
-                    const SizedBox(height: 32),
-                    
-                    // ── Reflections Section ──────────────────────────────────────
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text("DAILY REFLECTIONS", style: AppTextStyles.labelSmall),
-                        if (selectedJournals.isNotEmpty)
-                          Text(
-                            "${selectedJournals.length} entries",
-                            style: AppTextStyles.caption.copyWith(color: AppColors.primary),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    
-                    if (selectedJournals.isEmpty)
-                      HilwayCard(
-                        isGlass: true,
-                        color: Colors.white.withValues(alpha: 0.2),
-                        padding: const EdgeInsets.all(32),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              PhosphorIcon(PhosphorIconsRegular.pencilSimpleLine, color: AppColors.textTertiary.withValues(alpha: 0.5), size: 32),
-                              const SizedBox(height: 12),
-                              Text(
-                                "No journal entries for this day.",
-                                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      ...selectedJournals.map((entry) => GestureDetector(
-                        onTap: () => context.push('/journal/edit', extra: entry),
-                        child: HilwayCard(
+                      const SizedBox(height: 12),
+                      
+                      if (selectedJournals.isEmpty)
+                        HilwayCard(
                           isGlass: true,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
-                          glowColor: AppColors.secondary.withValues(alpha: 0.3),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const PhosphorIcon(PhosphorIconsRegular.quotes, size: 16, color: AppColors.secondary),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      entry.title,
-                                      style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                entry.content,
-                                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary, height: 1.5),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                          color: Colors.white.withValues(alpha: 0.2),
+                          padding: const EdgeInsets.all(32),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                PhosphorIcon(PhosphorIconsRegular.pencilSimpleLine, color: AppColors.textTertiary.withValues(alpha: 0.5), size: 32),
+                                const SizedBox(height: 12),
+                                Text(
+                                  "No journal entries for this day.",
+                                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      )),
-
-                    const SizedBox(height: 100), // Space for bottom nav
-                  ],
+                        )
+                      else
+                        ...selectedJournals.map((entry) => GestureDetector(
+                          onTap: () => context.push('/journal/edit', extra: entry),
+                          child: HilwayCard(
+                            isGlass: true,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            glowColor: AppColors.secondary.withValues(alpha: 0.3),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const PhosphorIcon(PhosphorIconsRegular.quotes, size: 16, color: AppColors.secondary),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        entry.title,
+                                        style: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  entry.content,
+                                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary, height: 1.5),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        )),
+  
+                      const SizedBox(height: 100), // Space for bottom nav
+                    ],
+                  ),
                 ),
               ),
             ),

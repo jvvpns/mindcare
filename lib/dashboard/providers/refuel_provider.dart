@@ -3,7 +3,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/models/refuel_log.dart';
 import '../../core/constants/app_constants.dart';
-import '../../core/services/hive_service.dart';
 import '../../core/services/sync_service.dart';
 import '../../core/services/notification_service.dart';
 
@@ -31,10 +30,14 @@ class RefuelNotifier extends StateNotifier<RefuelLog?> {
     // Ensure daily reminders are scheduled
     NotificationService.instance.scheduleDailyRefuelReminders();
 
-    // Refresh state periodically to update 'missedMeals' based on current time
-    Stream.periodic(const Duration(minutes: 5)).listen((_) {
+    // Refresh state periodically to update 'missedMeals' and handle midnight resets
+    Stream.periodic(const Duration(minutes: 1)).listen((_) {
       if (mounted) {
-        _refresh();
+        final currentKey = _dateToKey(state?.date ?? DateTime.now());
+        final todayKey = _dateToKey(DateTime.now());
+        if (currentKey != todayKey) {
+          _refresh();
+        }
       }
     });
   }

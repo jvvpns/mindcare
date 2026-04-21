@@ -48,7 +48,6 @@ dependencies:
   google_fonts: ^8.0.2
 
   # TFLite
-  tflite_flutter: ^0.12.1
 
   # Health & Fitness Sync
   health: ^13.3.1

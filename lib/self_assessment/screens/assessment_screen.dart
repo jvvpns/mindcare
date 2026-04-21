@@ -6,6 +6,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/router/app_router.dart';
+import '../../shared/widgets/responsive_wrapper.dart';
 import '../providers/self_assessment_provider.dart';
 
 class SelfAssessmentScreen extends ConsumerWidget {
@@ -23,59 +24,61 @@ class SelfAssessmentScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Self-Assessment Suite',
-              style: AppTextStyles.headingMedium.copyWith(color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Track your clinical resilience and burnout risk with medical-grade tools.',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 32),
-
-            // ── Burnout Assessment Card ──────────────────────────────────────
-            _buildAssessmentCard(
-              context,
-              title: 'AI Burnout Prediction',
-              subtitle: 'Multi-factor analysis of your physical and emotional load.',
-              icon: PhosphorIconsRegular.brain,
-              color: AppColors.primary,
-              cooldown: cooldownAsync.value ?? Duration.zero,
-              onTap: () => context.push(AppRoutes.burnoutAssessment),
-              lastResult: lastResult?.interpretation,
-            ),
-
-            const SizedBox(height: 16),
-
-            // ── Placeholder for future assessments ───────────────────────────
-            _buildAssessmentCard(
-              context,
-              title: 'Compassion Fatigue Scale',
-              subtitle: 'Measure your empathy levels and emotional exhaustion.',
-              icon: PhosphorIconsRegular.heartbeat,
-              color: AppColors.secondary,
-              isLocked: true,
-              onTap: () {},
-            ),
-            
-            const SizedBox(height: 16),
-
-            _buildAssessmentCard(
-              context,
-              title: 'Anxiety Check (GAD-7)',
-              subtitle: 'Clinical screening for general anxiety symptoms.',
-              icon: PhosphorIconsRegular.chartLine,
-              color: AppColors.error,
-              isLocked: true,
-              onTap: () {},
-            ),
-          ],
+      body: ResponsiveWrapper(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Self-Assessment Suite',
+                style: AppTextStyles.headingMedium.copyWith(color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Track your clinical resilience and burnout risk with medical-grade tools.',
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 32),
+  
+              // ── Burnout Assessment Card ──────────────────────────────────────
+              _buildAssessmentCard(
+                context,
+                title: 'AI Burnout Prediction',
+                subtitle: 'Multi-factor analysis of your physical and emotional load.',
+                icon: PhosphorIconsRegular.brain,
+                color: AppColors.primary,
+                cooldown: cooldownAsync.value ?? Duration.zero,
+                onTap: () => context.push(AppRoutes.burnoutAssessment),
+                lastResult: lastResult?.interpretation,
+              ),
+  
+              const SizedBox(height: 16),
+  
+              // ── Placeholder for future assessments ───────────────────────────
+              _buildAssessmentCard(
+                context,
+                title: 'Compassion Fatigue Scale',
+                subtitle: 'Measure your empathy levels and emotional exhaustion.',
+                icon: PhosphorIconsRegular.heartbeat,
+                color: AppColors.secondary,
+                isLocked: true,
+                onTap: () {},
+              ),
+              
+              const SizedBox(height: 16),
+  
+              _buildAssessmentCard(
+                context,
+                title: 'Anxiety Check (GAD-7)',
+                subtitle: 'Clinical screening for general anxiety symptoms.',
+                icon: PhosphorIconsRegular.chartLine,
+                color: AppColors.error,
+                isLocked: true,
+                onTap: () {},
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,57 +1,77 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hilway/core/constants/app_constants.dart';
-import 'package:hilway/core/services/hive_service.dart';
 import 'package:hilway/core/services/supabase_service.dart';
+import 'package:hilway/core/models/sync_job.dart';
+import 'package:hilway/core/models/mood_log.dart';
+import 'package:hilway/core/models/stress_rating.dart';
+import 'package:hilway/core/models/planner_entry.dart';
+import 'package:hilway/core/models/journal_entry.dart';
+import 'package:hilway/clinical_duty/models/shift_task.dart';
+import 'package:hilway/core/services/hive_service.dart';
 
-import '../models/mood_log.dart';
-import '../models/stress_rating.dart';
-import '../models/journal_entry.dart';
-import '../models/planner_entry.dart';
-import '../models/assessment_result.dart';
-import '../models/refuel_log.dart';
-import '../models/chat_session.dart';
-import '../models/chat_message.dart';
-
-/// Handles offline-first data synchronization between local Hive and remote Supabase.
+/// Senior-grade SyncService with State Machine and Exponential Backoff.
 class SyncService {
   SyncService._();
   static final SyncService instance = SyncService._();
 
-  bool _isSyncing = false;
+  bool _isProcessing = false;
+  Timer? _retryTimer;
 
-  Box get _queueBox => Hive.box(AppConstants.boxSyncQueue);
+  Box<SyncJob> get _queueBox => Hive.box<SyncJob>(AppConstants.boxSyncQueue);
 
-  /// Queues an upsert (insert or update) action for when internet is available.
+  /// Initializes the sync service and recovers from any crashes.
+  Future<void> init() async {
+    await _recoverInterruptedJobs();
+    processQueue(); // Start background sync
+  }
+
+  /// Resets any jobs stuck in 'syncing' state back to 'pending'.
+  /// This handles scenarios where the app was closed mid-sync.
+  Future<void> _recoverInterruptedJobs() async {
+    final interrupted = _queueBox.values.where((job) => job.state == SyncState.syncing).toList();
+    for (final job in interrupted) {
+      job.state = SyncState.pending;
+      await job.save();
+    }
+    if (interrupted.isNotEmpty) {
+      debugPrint('SyncService: Recovered ${interrupted.length} interrupted jobs.');
+    }
+  }
+
+  /// Queues an upsert action.
   Future<void> queueUpsert({
     required String table,
     required String id,
     required Map<String, dynamic> data,
   }) async {
     final userId = SupabaseService.currentUser?.id;
-    if (userId == null) return; // Don't queue if not logged in
+    if (userId == null) return;
 
-    // Inject user_id securely before queueing
     data['user_id'] = userId;
+    
+    // Use the model's timestamp as an idempotency/version key
+    // Most models use 'logged_at', 'created_at', or 'taken_at'
+    final timestamp = data['logged_at'] ?? data['created_at'] ?? data['taken_at'] ?? DateTime.now().toIso8601String();
 
-    final job = {
-      'action': 'upsert',
-      'table': table,
-      'id': id,
-      'data': data,
-    };
+    final job = SyncJob(
+      id: '${table}_$id',
+      action: 'upsert',
+      table: table,
+      payload: data,
+    );
 
-    // Store in Hive queue (using composite key to avoid duplicate jobs for same item)
-    final key = '${table}_${id}';
-    await _queueBox.put(key, job);
-    debugPrint('SyncService: Queued upsert for $key');
+    // Durable persistence to IndexedDB
+    await _queueBox.put(job.id, job);
+    debugPrint('SyncService: Queued ${job.id} (v: $timestamp)');
 
-    // Attempt to process queue immediately (will fail silently if offline)
     processQueue();
   }
 
-  /// Queues a delete action for when internet is available.
+  /// Queues a delete action.
   Future<void> queueDelete({
     required String table,
     required String id,
@@ -59,147 +79,156 @@ class SyncService {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
 
-    final job = {
-      'action': 'delete',
-      'table': table,
-      'id': id,
-    };
+    final job = SyncJob(
+      id: 'del_${table}_$id',
+      action: 'delete',
+      table: table,
+      payload: {'id': id, 'user_id': userId},
+    );
 
-    final key = 'delete_${table}_${id}';
-    await _queueBox.put(key, job);
-    debugPrint('SyncService: Queued delete for $key');
+    await _queueBox.put(job.id, job);
+    debugPrint('SyncService: Queued delete for ${job.id}');
 
     processQueue();
   }
 
-  /// Processes all pending jobs in the queue. Runs automatically on internet restore or app start.
+  /// Processes the queue with a state machine.
   Future<void> processQueue() async {
-    if (_isSyncing || _queueBox.isEmpty) return;
-
+    if (_isProcessing || _queueBox.isEmpty) return;
+    
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
 
-    _isSyncing = true;
-    debugPrint('SyncService: Processing ${_queueBox.length} items in queue...');
+    _isProcessing = true;
+    _retryTimer?.cancel();
 
     try {
-      final keys = _queueBox.keys.toList();
-      
-      for (final key in keys) {
-        final job = Map<String, dynamic>.from(_queueBox.get(key) as Map);
-        final action = job['action'] as String;
-        final table = job['table'] as String;
-        final id = job['id'] as String;
+      final jobs = _queueBox.values
+          .where((j) => j.state == SyncState.pending || j.state == SyncState.retrying)
+          .toList();
 
-        try {
-          if (action == 'upsert') {
-            final data = Map<String, dynamic>.from(job['data'] as Map);
-            await SupabaseService.client.from(table).upsert(data);
-          } else if (action == 'delete') {
-            await SupabaseService.client.from(table).delete().eq('id', id);
-          }
+      // Sort by creation time to preserve causal order
+      jobs.sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-          // If successful, remove from queue
-          await _queueBox.delete(key);
-        } on PostgrestException catch (e) {
-          // If it's a permanent syntax error (e.g. invalid UUID format), skip it 
-          // to avoid blocking the rest of the queue.
-          if (e.code == '22P02') {
-            debugPrint('SyncService: Skipping corrupted job $key due to invalid syntax (22P02): ${e.message}');
-            await _queueBox.delete(key);
-          } else {
-            rethrow; // Let the outer catch handle network/temporary errors
-          }
-        }
+      for (final job in jobs) {
+        // Check backoff if retrying
+        if (job.state == SyncState.retrying && !_shouldRetry(job)) continue;
+
+        await _syncJob(job);
       }
-      debugPrint('SyncService: Queue processed successfully.');
-    } catch (e) {
-      debugPrint('SyncService: Queue processing failed (likely offline). Will retry later. Error: $e');
     } finally {
-      _isSyncing = false;
+      _isProcessing = false;
+      
+      // Schedule next check if there are still jobs in the box.
+      // We check if box is not empty to ensure we eventually process everything.
+      if (_queueBox.isNotEmpty) {
+        _retryTimer = Timer(const Duration(seconds: 30), processQueue);
+      }
     }
   }
 
-  /// Fetches all user data from Supabase and populates local Hive boxes.
-  /// Typically called on first sign-in or manual sync.
+  bool _shouldRetry(SyncJob job) {
+    if (job.lastAttempt == null) return true;
+    
+    // Exponential backoff: 2^retryCount * 2 seconds
+    final delay = pow(2, job.retryCount) * 2000; 
+    final nextAllowed = job.lastAttempt!.add(Duration(milliseconds: delay.toInt()));
+    
+    return DateTime.now().isAfter(nextAllowed);
+  }
+
+  Future<void> _syncJob(SyncJob job) async {
+    if (!job.isInBox) {
+      // This job was overwritten by a newer edit before we could sync it.
+      // Safely ignore it, the newer edit will be picked up in the next loop.
+      return;
+    }
+
+    job.state = SyncState.syncing;
+    job.lastAttempt = DateTime.now();
+    await job.save();
+
+    try {
+      if (job.action == 'upsert') {
+        // Latest Timestamp Wins is handled by Postgres/Supabase upsert by default 
+        // if IDs match. To be safer, we could add a RPC that checks timestamps.
+        await SupabaseService.client
+            .from(job.table)
+            .upsert(job.payload)
+            .timeout(const Duration(seconds: 15));
+      } else if (job.action == 'delete') {
+        await SupabaseService.client
+            .from(job.table)
+            .delete()
+            .eq('id', job.payload['id'])
+            .timeout(const Duration(seconds: 15));
+      }
+
+      // Success Path
+      await _queueBox.delete(job.id);
+      debugPrint('SyncService: Successfully synced ${job.id}');
+      
+    } catch (e) {
+      if (e is PostgrestException && (e.code?.startsWith('22') ?? false)) {
+        // Data error (Permanent)
+        job.state = SyncState.failed;
+        debugPrint('SyncService: Permanent failure for ${job.id}: ${e.message}');
+      } else {
+        // Network/Server error (Retryable)
+        job.state = SyncState.retrying;
+        job.retryCount++;
+        debugPrint('SyncService: Retryable failure for ${job.id} (Attempt ${job.retryCount})');
+      }
+      await job.save();
+    }
+  }
+
+  /// Pulls all user data from Supabase (Recovery/Sync).
   Future<void> pullAllData() async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
 
-    debugPrint('SyncService: Pulling all remote data for user \$userId...');
-
     try {
-      final client = SupabaseService.client;
-
-      // 1. Mood Logs
-      debugPrint('SyncService: Pulling mood_logs...');
-      final moods = await client.from('mood_logs').select().eq('user_id', userId);
-      for (var map in moods) {
-        final log = MoodLog.fromMap(map);
+      debugPrint('SyncService: Starting global data pull...');
+      
+      // 1. Pull & Save Mood Logs
+      final moods = await SupabaseService.client.from('mood_logs').select().eq('user_id', userId);
+      for (var json in moods) {
+        final log = MoodLog.fromMap(json);
         await HiveService.moodBox.put(log.id, log);
       }
-
-      // 2. Stress Ratings
-      debugPrint('SyncService: Pulling stress_ratings...');
-      final stress = await client.from('stress_ratings').select().eq('user_id', userId);
-      for (var map in stress) {
-        final rating = StressRating.fromMap(map);
-        await HiveService.stressBox.put(rating.id, rating);
+      
+      // 2. Pull & Save Stress Ratings
+      final stress = await SupabaseService.client.from('stress_ratings').select().eq('user_id', userId);
+      for (var json in stress) {
+        final log = StressRating.fromMap(json);
+        await HiveService.stressBox.put(log.id, log);
       }
 
-      // 3. Journal Entries
-      debugPrint('SyncService: Pulling journal_entries...');
-      final journals = await client.from('journal_entries').select().eq('user_id', userId);
-      for (var map in journals) {
-        final entry = JournalEntry.fromMap(map);
+      // 3. Pull & Save Planner Entries
+      final planner = await SupabaseService.client.from('planner_entries').select().eq('user_id', userId);
+      for (var json in planner) {
+        final entry = PlannerEntry.fromMap(json);
+        await HiveService.plannerBox.put(entry.id, entry);
+      }
+
+      // 4. Pull & Save Journal Entries
+      final journals = await SupabaseService.client.from('journal_entries').select().eq('user_id', userId);
+      for (var json in journals) {
+        final entry = JournalEntry.fromMap(json);
         await HiveService.journalBox.put(entry.id, entry);
       }
-
-      // 4. Planner Entries
-      debugPrint('SyncService: Pulling planner_entries...');
-      final tasks = await client.from('planner_entries').select().eq('user_id', userId);
-      for (var map in tasks) {
-        final task = PlannerEntry.fromMap(map);
-        await HiveService.plannerBox.put(task.id, task);
+      
+      // 5. Pull & Save Shift Tasks (Clinical Duties)
+      final shifts = await SupabaseService.client.from('shift_tasks').select().eq('user_id', userId);
+      for (var json in shifts) {
+        final task = ShiftTask.fromMap(json);
+        await HiveService.shiftBox.put(task.id, task);
       }
-
-      // 5. Assessment Results
-      debugPrint('SyncService: Pulling assessment_results...');
-      final assessments = await client.from('assessment_results').select().eq('user_id', userId);
-      for (var map in assessments) {
-        final res = AssessmentResult.fromMap(map);
-        await HiveService.assessmentBox.put(res.id, res);
-      }
-
-      // 6. Refuel Logs
-      debugPrint('SyncService: Pulling refuel_logs...');
-      final refuels = await client.from('refuel_logs').select().eq('user_id', userId);
-      for (var map in refuels) {
-        final log = RefuelLog.fromMap(map);
-        await HiveService.refuelBox.put(log.id, log);
-      }
-
-      // 7. Chat Sessions
-      debugPrint('SyncService: Pulling chat_sessions...');
-      final sessions = await client.from('chat_sessions').select().eq('user_id', userId);
-      for (var map in sessions) {
-        final session = ChatSession.fromMap(map);
-        await HiveService.chatSessionBox.put(session.id, session);
-      }
-
-      // 8. Chat Messages
-      debugPrint('SyncService: Pulling chat_messages...');
-      final messages = await client.from('chat_messages').select().eq('user_id', userId);
-      for (var map in messages) {
-        final msg = ChatMessage.fromMap(map);
-        await HiveService.chatBox.put(msg.id, msg);
-      }
-
-      debugPrint('SyncService: Successfully pulled and saved all remote data.');
+      
+      debugPrint('SyncService: Successfully pulled ${moods.length} moods, ${planner.length} tasks, ${shifts.length} shift duties.');
     } catch (e) {
-      debugPrint('SyncService: Failed to pull remote data: \$e');
-      // If we fail to pull, the user still has an empty local DB (or whatever they had).
-      // They can retry by refreshing or restarting.
+      debugPrint('SyncService: Global pull failed: $e');
     }
   }
 }

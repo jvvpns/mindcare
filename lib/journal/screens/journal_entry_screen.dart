@@ -10,6 +10,7 @@ import '../../core/models/journal_entry.dart';
 import '../providers/journal_provider.dart';
 import '../../shared/widgets/hilway_background.dart';
 import '../../shared/widgets/hilway_card.dart';
+import '../../shared/widgets/responsive_wrapper.dart';
 
 class JournalEntryScreen extends ConsumerStatefulWidget {
   final JournalEntry? entry;
@@ -92,170 +93,172 @@ class _JournalEntryScreenState extends ConsumerState<JournalEntryScreen> {
       backgroundColor: Colors.transparent,
       body: HilwayBackground(
         emotion: emotion,
-        child: Stack(
-          children: [
-            // ── Scrollable Form Area ──────────────────────────────────────────
-            SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 80, 24, 40),
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: _titleController,
-                      readOnly: _isReadOnly,
-                      textCapitalization: TextCapitalization.sentences,
-                      style: AppTextStyles.headingMedium.copyWith(fontSize: 28),
-                      decoration: InputDecoration(
-                        hintText: 'Entry Title',
-                        hintStyle: AppTextStyles.headingMedium.copyWith(
-                          color: AppColors.textTertiary.withValues(alpha: 0.4), 
-                          fontSize: 28
+        child: ResponsiveWrapper(
+          child: Stack(
+            children: [
+              // ── Scrollable Form Area ──────────────────────────────────────────
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 80, 24, 40),
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: _titleController,
+                        readOnly: _isReadOnly,
+                        textCapitalization: TextCapitalization.sentences,
+                        style: AppTextStyles.headingMedium.copyWith(fontSize: 28),
+                        decoration: InputDecoration(
+                          hintText: 'Entry Title',
+                          hintStyle: AppTextStyles.headingMedium.copyWith(
+                            color: AppColors.textTertiary.withValues(alpha: 0.4), 
+                            fontSize: 28
+                          ),
+                          border: InputBorder.none,
                         ),
-                        border: InputBorder.none,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // ── Premium Mood Picker ───────────────────────────────────────
-                    if (!_isReadOnly || _selectedMoodIndex != null) ...[
-                      Text(
-                        _isReadOnly ? "HOW YOU WERE FEELING" : "HOW ARE YOU FEELING?", 
-                        style: AppTextStyles.labelSmall
-                      ),
-                      const SizedBox(height: 12),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        clipBehavior: Clip.none,
-                        physics: const BouncingScrollPhysics(),
-                        child: Row(
-                          children: List.generate(
-                            AppConstants.moodEmojis.length,
-                            (index) {
-                              final isSelected = _selectedMoodIndex == index.toDouble();
-                              
-                              // In read-only mode, only show the selected mood
-                              if (_isReadOnly && !isSelected) return const SizedBox.shrink();
-
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 12.0),
-                                child: GestureDetector(
-                                  onTap: _isReadOnly ? null : () {
-                                    setState(() {
-                                      _selectedMoodIndex = isSelected ? null : index.toDouble();
-                                    });
-                                  },
-                                  child: HilwayCard(
-                                    isGlass: true,
-                                    width: null,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                    color: isSelected ? Colors.white.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.2),
-                                    glowColor: isSelected ? AppColors.primary : Colors.transparent,
-                                    child: Row(
-                                      children: [
-                                        Image.asset(
-                                          AppConstants.moodAnimatedAssets[index],
-                                          width: 28,
-                                          height: 28,
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Text(
-                                          AppConstants.moodLabels[index],
-                                          style: AppTextStyles.labelSmall.copyWith(
-                                            color: isSelected ? AppColors.primaryDark : AppColors.textPrimary,
-                                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w400,
+                      const SizedBox(height: 16),
+                      
+                      // ── Premium Mood Picker ───────────────────────────────────────
+                      if (!_isReadOnly || _selectedMoodIndex != null) ...[
+                        Text(
+                          _isReadOnly ? "HOW YOU WERE FEELING" : "HOW ARE YOU FEELING?", 
+                          style: AppTextStyles.labelSmall
+                        ),
+                        const SizedBox(height: 12),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          clipBehavior: Clip.none,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            children: List.generate(
+                              AppConstants.moodEmojis.length,
+                              (index) {
+                                final isSelected = _selectedMoodIndex == index.toDouble();
+                                
+                                // In read-only mode, only show the selected mood
+                                if (_isReadOnly && !isSelected) return const SizedBox.shrink();
+  
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 12.0),
+                                  child: GestureDetector(
+                                    onTap: _isReadOnly ? null : () {
+                                      setState(() {
+                                        _selectedMoodIndex = isSelected ? null : index.toDouble();
+                                      });
+                                    },
+                                    child: HilwayCard(
+                                      isGlass: true,
+                                      width: null,
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                      color: isSelected ? Colors.white.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.2),
+                                      glowColor: isSelected ? AppColors.primary : Colors.transparent,
+                                      child: Row(
+                                        children: [
+                                          Image.asset(
+                                            AppConstants.moodAnimatedAssets[index],
+                                            width: 28,
+                                            height: 28,
                                           ),
-                                        ),
-                                      ],
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            AppConstants.moodLabels[index],
+                                            style: AppTextStyles.labelSmall.copyWith(
+                                              color: isSelected ? AppColors.primaryDark : AppColors.textPrimary,
+                                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w400,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-                    
-                    TextField(
-                      controller: _contentController,
-                      readOnly: _isReadOnly,
-                      textCapitalization: TextCapitalization.sentences,
-                      style: AppTextStyles.bodyLarge.copyWith(height: 1.7, fontSize: 18),
-                      maxLines: null,
-                      minLines: 10,
-                      decoration: InputDecoration(
-                        hintText: 'Start writing your thoughts...',
-                        hintStyle: AppTextStyles.bodyLarge.copyWith(
-                          color: AppColors.textTertiary.withValues(alpha: 0.5)
+                        const SizedBox(height: 32),
+                      ],
+                      
+                      TextField(
+                        controller: _contentController,
+                        readOnly: _isReadOnly,
+                        textCapitalization: TextCapitalization.sentences,
+                        style: AppTextStyles.bodyLarge.copyWith(height: 1.7, fontSize: 18),
+                        maxLines: null,
+                        minLines: 10,
+                        decoration: InputDecoration(
+                          hintText: 'Start writing your thoughts...',
+                          hintStyle: AppTextStyles.bodyLarge.copyWith(
+                            color: AppColors.textTertiary.withValues(alpha: 0.5)
+                          ),
+                          border: InputBorder.none,
                         ),
-                        border: InputBorder.none,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-
-            // ── Premium Glass Header ─────────────────────────────────────────
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: ClipRRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: Container(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, bottom: 10),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const PhosphorIcon(PhosphorIconsRegular.x),
-                          onPressed: () => context.pop(),
-                        ),
-                        Text(
-                          widget.entry == null 
-                            ? 'New Reflection' 
-                            : (_isReadOnly ? 'Reflection' : 'Edit Reflection'), 
-                          style: AppTextStyles.headingSmall
-                        ),
-                        const Spacer(),
-                        if (_isReadOnly)
-                          TextButton.icon(
-                            onPressed: () => setState(() => _isReadOnly = false),
-                            icon: const PhosphorIcon(PhosphorIconsRegular.pencilSimpleLine, size: 18),
-                            label: Text(
-                              'EDIT',
-                              style: AppTextStyles.labelLarge.copyWith(
-                                color: AppColors.primary, 
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          )
-                        else
-                          TextButton(
-                            onPressed: _saveEntry,
-                            child: Text(
-                              'SAVE',
-                              style: AppTextStyles.labelLarge.copyWith(
-                                color: AppColors.primary, 
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
+  
+              // ── Premium Glass Header ─────────────────────────────────────────
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: ClipRRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    child: Container(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, bottom: 10),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const PhosphorIcon(PhosphorIconsRegular.x),
+                            onPressed: () => context.pop(),
                           ),
-                        const SizedBox(width: 8),
-                      ],
+                          Text(
+                            widget.entry == null 
+                              ? 'New Reflection' 
+                              : (_isReadOnly ? 'Reflection' : 'Edit Reflection'), 
+                            style: AppTextStyles.headingSmall
+                          ),
+                          const Spacer(),
+                          if (_isReadOnly)
+                            TextButton.icon(
+                              onPressed: () => setState(() => _isReadOnly = false),
+                              icon: const PhosphorIcon(PhosphorIconsRegular.pencilSimpleLine, size: 18),
+                              label: Text(
+                                'EDIT',
+                                style: AppTextStyles.labelLarge.copyWith(
+                                  color: AppColors.primary, 
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            )
+                          else
+                            TextButton(
+                              onPressed: _saveEntry,
+                              child: Text(
+                                'SAVE',
+                                style: AppTextStyles.labelLarge.copyWith(
+                                  color: AppColors.primary, 
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ),
+                          const SizedBox(width: 8),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

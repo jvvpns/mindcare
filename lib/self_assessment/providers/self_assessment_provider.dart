@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hilway/core/services/burnout_service.dart';
+import 'package:hilway/core/services/intelligence_service.dart';
 import 'package:hilway/core/services/hive_service.dart';
 import 'package:hilway/core/services/sync_service.dart';
 import 'package:uuid/uuid.dart';
@@ -56,38 +56,29 @@ class AssessmentStateNotifier extends StateNotifier<AsyncValue<AssessmentResult?
   Future<void> evaluateAndSave(AssessmentAnswers answers) async {
     state = const AsyncValue.loading();
     try {
-      final analysis = await BurnoutService.instance.evaluateRisk(
+      final analysis = await IntelligenceService.instance.predictBurnout(
         sleepHours: answers.sleepHours,
-        stressLevel: answers.stressLevel,
-        duties: answers.duties,
-        mealsSkipped: answers.mealsSkipped,
+        moodTrend: answers.stressLevel / 5.0, // Normalize to 0-1
+        taskLoad: answers.duties / 5.0, // Normalize to 0-1
+        mealSkipRate: answers.mealsSkipped / 4.0, // Normalize to 0-1
       );
+
+      final levelStr = analysis['level'] as String;
+      final confidence = (analysis['confidence'] as num).toDouble();
+      final probabilities = (analysis['probabilities'] as List).cast<double>();
 
       // ── Emotional Vitals Adjustment ───────────────────────────
       // Calculate a qualitative burden score (Max: 15)
       // Compassion is inverted (low compassion = high burden)
       final emotionalBurden = answers.dreadLevel + (6 - answers.compassionLevel) + answers.physicalTension;
       
-      BurnoutLevel baseLevel = analysis['level'] as BurnoutLevel;
-      double adjustedScore = (analysis['confidence'] as double) * 100;
-
-      // Escalate risk if emotional burden is critically high (> 11)
-      if (emotionalBurden >= 11 && baseLevel != BurnoutLevel.high) {
-        baseLevel = BurnoutLevel.high;
-        adjustedScore = 85.0; // Bump score to reflect high risk
-      } else if (emotionalBurden >= 8 && baseLevel == BurnoutLevel.low) {
-        baseLevel = BurnoutLevel.medium;
-        adjustedScore = 55.0;
-      }
-
-      final levelStr = baseLevel.toString().split('.').last; // low, medium, high
       final interpretation = '${levelStr[0].toUpperCase()}${levelStr.substring(1)} Burnout Risk (Clinically Adjusted)';
 
       final result = AssessmentResult(
         id:             const Uuid().v4(),
         userId:         '', // populated if user is logged in — optional for local-only
         type:           'burnout_prediction',
-        totalScore:     adjustedScore,
+        totalScore:     confidence,
         answers:        {
           'sleepHours':   answers.sleepHours,
           'stressLevel':  answers.stressLevel,

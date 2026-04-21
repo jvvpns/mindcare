@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
-import '../../core/services/burnout_service.dart';
+import '../../core/models/burnout_risk.dart';
 
 class WellnessGauge extends StatefulWidget {
   final double score; // 0.0 to 1.0

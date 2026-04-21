@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../shared/widgets/responsive_wrapper.dart';
 
 class ReferralScreen extends StatelessWidget {
   const ReferralScreen({super.key});
@@ -14,7 +15,7 @@ class ReferralScreen extends StatelessWidget {
         backgroundColor: AppColors.surface,
         elevation: 0,
       ),
-      body: Center(
+      body: ResponsiveWrapper(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

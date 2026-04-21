@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../shared/widgets/responsive_wrapper.dart';
 import '../../core/constants/philippines_schools.dart';
 import '../../core/router/app_router.dart';
 import '../../core/utils/validators.dart';
@@ -239,240 +240,242 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 12),
-                
-                // ── App Logo ────────────────────────────────────────
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 15,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Image.asset('assets/images/hilway_logo.png', height: 80),
-                  ),
-                ),
-                
-                const SizedBox(height: 32),
-
-                const Text(
-                  'Create account', 
-                  style: AppTextStyles.displayMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Join HILWAY and start your wellness journey',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 32),
-
-                // ── Personal Info ───────────────────────────────────────────
-                const Text('Personal Information', style: AppTextStyles.labelLarge),
-                const SizedBox(height: 16),
-                
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _firstNameController,
-                        textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(
-                          labelText: 'First Name',
-                          prefixIcon: Icon(PhosphorIconsRegular.user, size: 20),
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _lastNameController,
-                        textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(
-                          labelText: 'Last Name',
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-
-                TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'Phone Number',
-                    prefixIcon: Icon(PhosphorIconsRegular.phone, size: 20),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Phone number is required' : null,
-                ),
-                const SizedBox(height: 24),
-
-                // ── Academic Info ───────────────────────────────────────────
-                const Text('Academic Details', style: AppTextStyles.labelLarge),
-                const SizedBox(height: 16),
-
-                // ignore: deprecated_member_use
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedYearLevel,
-                  decoration: const InputDecoration(
-                    labelText: 'Year Level',
-                    prefixIcon: Icon(PhosphorIconsRegular.graduationCap, size: 20),
-                  ),
-                  items: AppSchools.yearLevels.map((year) {
-                    return DropdownMenuItem(value: year, child: Text(year));
-                  }).toList(),
-                  onChanged: (val) => setState(() => _selectedYearLevel = val),
-                  validator: (v) => v == null ? 'Year level is required' : null,
-                ),
-                const SizedBox(height: 14),
-
-                InkWell(
-                  onTap: _showSchoolPicker,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.borderMedium),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(PhosphorIconsRegular.buildings, color: AppColors.textSecondary, size: 20),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            _isOtherSchool 
-                              ? 'Other School' 
-                              : (_selectedSchool?.name ?? 'Select your school'),
-                            style: AppTextStyles.bodyLarge.copyWith(
-                              color: (_selectedSchool != null || _isOtherSchool) ? AppColors.textPrimary : AppColors.textSecondary,
-                            ),
+        child: ResponsiveWrapper(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 12),
+                  
+                  // ── App Logo ────────────────────────────────────────
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 15,
+                            offset: const Offset(0, 6),
                           ),
-                        ),
-                        const Icon(PhosphorIconsRegular.caretDown, color: AppColors.textSecondary, size: 18),
-                      ],
+                        ],
+                      ),
+                      child: Image.asset('assets/images/hilway_logo.png', height: 80),
                     ),
                   ),
-                ),
-                
-                if (_isOtherSchool) ...[
+                  
+                  const SizedBox(height: 32),
+  
+                  const Text(
+                    'Create account', 
+                    style: AppTextStyles.displayMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Join HILWAY and start your wellness journey',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 32),
+  
+                  // ── Personal Info ───────────────────────────────────────────
+                  const Text('Personal Information', style: AppTextStyles.labelLarge),
+                  const SizedBox(height: 16),
+                  
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _firstNameController,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'First Name',
+                            prefixIcon: Icon(PhosphorIconsRegular.user, size: 20),
+                          ),
+                          validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _lastNameController,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Last Name',
+                          ),
+                          validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 14),
+  
                   TextFormField(
-                    controller: _otherSchoolController,
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
-                      labelText: 'School Name',
-                      prefixIcon: Icon(PhosphorIconsRegular.pencilSimple, size: 20),
+                      labelText: 'Phone Number',
+                      prefixIcon: Icon(PhosphorIconsRegular.phone, size: 20),
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'School name is required' : null,
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Phone number is required' : null,
                   ),
-                ],
-                const SizedBox(height: 24),
-
-                // ── Account Info ────────────────────────────────────────────
-                const Text('Account Info', style: AppTextStyles.labelLarge),
-                const SizedBox(height: 16),
-
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'Email address',
-                    prefixIcon: Icon(PhosphorIconsRegular.envelope, size: 20),
+                  const SizedBox(height: 24),
+  
+                  // ── Academic Info ───────────────────────────────────────────
+                  const Text('Academic Details', style: AppTextStyles.labelLarge),
+                  const SizedBox(height: 16),
+  
+                  // ignore: deprecated_member_use
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedYearLevel,
+                    decoration: const InputDecoration(
+                      labelText: 'Year Level',
+                      prefixIcon: Icon(PhosphorIconsRegular.graduationCap, size: 20),
+                    ),
+                    items: AppSchools.yearLevels.map((year) {
+                      return DropdownMenuItem(value: year, child: Text(year));
+                    }).toList(),
+                    onChanged: (val) => setState(() => _selectedYearLevel = val),
+                    validator: (v) => v == null ? 'Year level is required' : null,
                   ),
-                  validator: Validators.email,
-                ),
-                const SizedBox(height: 14),
-
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(PhosphorIconsRegular.lock, size: 20),
-                    helperText: 'At least 8 characters with 1 uppercase and 1 number',
-                    helperStyle: AppTextStyles.caption,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash,
-                        size: 20,
-                        color: AppColors.textTertiary,
+                  const SizedBox(height: 14),
+  
+                  InkWell(
+                    onTap: _showSchoolPicker,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.borderMedium),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                  ),
-                  validator: Validators.password,
-                ),
-                const SizedBox(height: 14),
-
-                TextFormField(
-                  controller: _confirmController,
-                  obscureText: _obscureConfirm,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _submit(),
-                  decoration: InputDecoration(
-                    labelText: 'Confirm password',
-                    prefixIcon: const Icon(PhosphorIconsRegular.lock, size: 20),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirm ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash,
-                        size: 20,
-                        color: AppColors.textTertiary,
+                      child: Row(
+                        children: [
+                          const Icon(PhosphorIconsRegular.buildings, color: AppColors.textSecondary, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _isOtherSchool 
+                                ? 'Other School' 
+                                : (_selectedSchool?.name ?? 'Select your school'),
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                color: (_selectedSchool != null || _isOtherSchool) ? AppColors.textPrimary : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          const Icon(PhosphorIconsRegular.caretDown, color: AppColors.textSecondary, size: 18),
+                        ],
                       ),
-                      onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                     ),
                   ),
-                  validator: Validators.confirmPassword(_passwordController.text),
-                ),
-
-                const SizedBox(height: 32),
-
-                // ── Submit ──────────────────────────────────────────────────
-                ElevatedButton(
-                  onPressed: authState.isLoading ? null : _submit,
-                  child: authState.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Create account'),
-                ),
-
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Already have an account? ', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
-                    GestureDetector(
-                      onTap: () => context.go(AppRoutes.login),
-                      child: Text('Sign in', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                  
+                  if (_isOtherSchool) ...[
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _otherSchoolController,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'School Name',
+                        prefixIcon: Icon(PhosphorIconsRegular.pencilSimple, size: 20),
+                      ),
+                      validator: (v) => v == null || v.trim().isEmpty ? 'School name is required' : null,
                     ),
                   ],
-                ),
-                const SizedBox(height: 32),
-              ],
+                  const SizedBox(height: 24),
+  
+                  // ── Account Info ────────────────────────────────────────────
+                  const Text('Account Info', style: AppTextStyles.labelLarge),
+                  const SizedBox(height: 16),
+  
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Email address',
+                      prefixIcon: Icon(PhosphorIconsRegular.envelope, size: 20),
+                    ),
+                    validator: Validators.email,
+                  ),
+                  const SizedBox(height: 14),
+  
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: const Icon(PhosphorIconsRegular.lock, size: 20),
+                      helperText: 'At least 8 characters with 1 uppercase and 1 number',
+                      helperStyle: AppTextStyles.caption,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash,
+                          size: 20,
+                          color: AppColors.textTertiary,
+                        ),
+                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                    ),
+                    validator: Validators.password,
+                  ),
+                  const SizedBox(height: 14),
+  
+                  TextFormField(
+                    controller: _confirmController,
+                    obscureText: _obscureConfirm,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _submit(),
+                    decoration: InputDecoration(
+                      labelText: 'Confirm password',
+                      prefixIcon: const Icon(PhosphorIconsRegular.lock, size: 20),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirm ? PhosphorIconsRegular.eye : PhosphorIconsRegular.eyeSlash,
+                          size: 20,
+                          color: AppColors.textTertiary,
+                        ),
+                        onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                      ),
+                    ),
+                    validator: Validators.confirmPassword(_passwordController.text),
+                  ),
+  
+                  const SizedBox(height: 32),
+  
+                  // ── Submit ──────────────────────────────────────────────────
+                  ElevatedButton(
+                    onPressed: authState.isLoading ? null : _submit,
+                    child: authState.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Create account'),
+                  ),
+  
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Already have an account? ', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+                      GestureDetector(
+                        onTap: () => context.go(AppRoutes.login),
+                        child: Text('Sign in', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
           ),
         ),

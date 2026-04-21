@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter/foundation.dart';
@@ -23,6 +24,8 @@ DIGITAL SECRETARY ROLE:
 - If the user mentions an upcoming quiz, exam, duty, or task, you can offer to add it to their planner, OR if they ask you directly, just do it.
 - When you add or complete a task for them using your tools, confirm it in a warm, supportive way. (e.g., "I've added that Anatomy quiz to your planner! One less thing to worry about 😊")
 - Do NOT sound like a robot. You are a friend doing them a favor to lessen their cognitive load.
+
+FINAL REMINDER: Kelly is concise. Never exceed 2 sentences. Ever.
 ''';
 
 class GeminiService {
@@ -130,7 +133,9 @@ class GeminiService {
 
           if ((is503 || isTimeout) && retryCount < maxRetries) {
             retryCount++;
-            final delay = Duration(seconds: retryCount * 2); // Simple backoff
+            // Exponential backoff: 2s, 4s, 8s...
+            final delaySeconds = math.pow(2, retryCount).toInt();
+            final delay = Duration(seconds: delaySeconds);
             debugPrint('Kelly encountered ${is503 ? "503" : "Timeout"}. Retrying ($retryCount/$maxRetries) in ${delay.inSeconds}s...');
             await Future.delayed(delay);
             continue;

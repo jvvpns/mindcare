@@ -8,6 +8,7 @@
     </queries>
 
     <!-- Health Connect Permissions -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.health.READ_SLEEP"/>
     <uses-permission android:name="android.permission.health.WRITE_MINDFULNESS_SESSION"/>
 
@@ -15,6 +16,7 @@
         android:label="HILWAY"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
+        android:usesCleartextTraffic="true"
         android:enableOnBackInvokedCallback="true">
         
         <activity

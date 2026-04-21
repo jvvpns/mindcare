@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:intl/intl.dart';
@@ -11,6 +12,7 @@ import '../../shared/widgets/hilway_background.dart';
 import '../../core/models/planner_entry.dart';
 import '../providers/planner_provider.dart';
 import '../../chatbot/providers/kelly_state_provider.dart';
+import '../../shared/widgets/responsive_wrapper.dart';
 
 class PlannerScreen extends ConsumerStatefulWidget {
   const PlannerScreen({super.key});
@@ -42,7 +44,17 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
              t.dueDate.day == _selectedDay!.day;
     }).toList();
 
-    final overdue = tasks.where((t) => t.isOverdue && !t.isCompleted).toList();
+    // Filter overdue tasks but exclude those already visible in the selected day's pending list to prevent duplicate widget keys
+    final overdue = tasks.where((t) {
+      if (!t.isOverdue || t.isCompleted) return false;
+      if (_selectedDay != null && 
+          t.dueDate.year == _selectedDay!.year &&
+          t.dueDate.month == _selectedDay!.month &&
+          t.dueDate.day == _selectedDay!.day) {
+        return false;
+      }
+      return true;
+    }).toList();
     
     // Split selected day tasks
     final todayPending = selectedDayTasks.where((t) => !t.isCompleted).toList();
@@ -79,7 +91,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddTaskSheet(context, ref, _selectedDay),
+        onPressed: () {
+        HapticFeedback.mediumImpact();
+        _showAddTaskSheet(context, ref, _selectedDay);
+      },
         backgroundColor: AppColors.primary,
         icon: const PhosphorIcon(PhosphorIconsRegular.plus, color: Colors.white),
         label: Text('Add Task', style: AppTextStyles.labelMedium.copyWith(color: Colors.white)),
@@ -87,199 +102,217 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       body: HilwayBackground(
         emotion: effectiveEmotion,
         child: SafeArea(
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // ── Calendar Header ───────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surface.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+          child: ResponsiveWrapper(
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                // ── Calendar Header ───────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surface.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        // Remove horizontal padding so day columns have full width and won't clip
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: TableCalendar(
+                          firstDay: DateTime.now().subtract(const Duration(days: 365)),
+                          lastDay: DateTime.now().add(const Duration(days: 365)),
+                          focusedDay: _focusedDay,
+                          calendarFormat: _calendarFormat,
+                          availableCalendarFormats: const {
+                            CalendarFormat.month: 'Month',
+                            CalendarFormat.week: 'Week',
+                          },
+                          selectedDayPredicate: (day) {
+                            return isSameDay(_selectedDay, day);
+                          },
+                          onDaySelected: (selectedDay, focusedDay) {
+                            if (!isSameDay(_selectedDay, selectedDay)) {
+                              setState(() {
+                                _selectedDay = selectedDay;
+                                _focusedDay = focusedDay;
+                              });
+                            }
+                          },
+                          onFormatChanged: (format) {
+                            if (_calendarFormat != format) {
+                              setState(() {
+                                _calendarFormat = format;
+                              });
+                            }
+                          },
+                          onPageChanged: (focusedDay) {
+                            _focusedDay = focusedDay;
+                          },
+                          eventLoader: (day) {
+                            return tasks.where((t) => isSameDay(t.dueDate, day)).toList();
+                          },
+                          calendarBuilders: CalendarBuilders(
+                            markerBuilder: (context, date, events) {
+                              if (events.isEmpty) return const SizedBox();
+                              return Positioned(
+                                bottom: 1,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: events.take(3).map((e) {
+                                    final entry = e as PlannerEntry;
+                                    return Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                                      width: 5,
+                                      height: 5,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: _TaskTile.getCategoryColor(entry.category),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              );
+                            },
+                          ),
+                          headerStyle: HeaderStyle(
+                            titleCentered: true,
+                            formatButtonVisible: false,
+                            headerPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            titleTextStyle: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w700),
+                            leftChevronIcon: const PhosphorIcon(PhosphorIconsRegular.caretLeft, size: 20),
+                            rightChevronIcon: const PhosphorIcon(PhosphorIconsRegular.caretRight, size: 20),
+                          ),
+                          daysOfWeekStyle: DaysOfWeekStyle(
+                            // Smaller font so all 7 labels (Sun-Sat) are always fully visible
+                            weekdayStyle: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                            weekendStyle: AppTextStyles.caption.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                          ),
+                          calendarStyle: CalendarStyle(
+                            cellPadding: EdgeInsets.zero,
+                            todayDecoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              shape: BoxShape.circle,
+                            ),
+                            selectedDecoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            markerDecoration: const BoxDecoration(
+                              color: AppColors.accent,
+                              shape: BoxShape.circle,
+                            ),
+                            outsideDaysVisible: false,
+                          ),
                         ),
+                      ),
+                    ),
+                  ),
+                ),
+  
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+  
+                // ── Task List for Selected Day ──────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          isSameDay(_selectedDay, DateTime.now()) 
+                            ? "Today's Tasks" 
+                            : DateFormat('MMM d, yyyy').format(_selectedDay ?? DateTime.now()),
+                          style: AppTextStyles.headingSmall,
+                        ),
+                        if (todayPending.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              '${todayPending.length} pending',
+                              style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary),
+                            ),
+                          ),
                       ],
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: TableCalendar(
-                        firstDay: DateTime.now().subtract(const Duration(days: 365)),
-                        lastDay: DateTime.now().add(const Duration(days: 365)),
-                        focusedDay: _focusedDay,
-                        calendarFormat: _calendarFormat,
-                        availableCalendarFormats: const {
-                          CalendarFormat.month: 'Month',
-                          CalendarFormat.week: 'Week',
-                        },
-                        selectedDayPredicate: (day) {
-                          return isSameDay(_selectedDay, day);
-                        },
-                        onDaySelected: (selectedDay, focusedDay) {
-                          if (!isSameDay(_selectedDay, selectedDay)) {
-                            setState(() {
-                              _selectedDay = selectedDay;
-                              _focusedDay = focusedDay;
-                            });
-                          }
-                        },
-                        onFormatChanged: (format) {
-                          if (_calendarFormat != format) {
-                            setState(() {
-                              _calendarFormat = format;
-                            });
-                          }
-                        },
-                        onPageChanged: (focusedDay) {
-                          _focusedDay = focusedDay;
-                        },
-                        eventLoader: (day) {
-                          return tasks.where((t) => isSameDay(t.dueDate, day)).toList();
-                        },
-                        calendarBuilders: CalendarBuilders(
-                          markerBuilder: (context, date, events) {
-                            if (events.isEmpty) return const SizedBox();
-                            return Positioned(
-                              bottom: 1,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: events.take(3).map((e) {
-                                  final entry = e as PlannerEntry;
-                                  return Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                                    width: 5,
-                                    height: 5,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: _TaskTile.getCategoryColor(entry.category),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            );
-                          },
-                        ),
-                        headerStyle: HeaderStyle(
-                          titleCentered: true,
-                          formatButtonVisible: false,
-                          titleTextStyle: AppTextStyles.labelLarge.copyWith(fontWeight: FontWeight.w700),
-                          leftChevronIcon: const PhosphorIcon(PhosphorIconsRegular.caretLeft, size: 20),
-                          rightChevronIcon: const PhosphorIcon(PhosphorIconsRegular.caretRight, size: 20),
-                        ),
-                        calendarStyle: CalendarStyle(
-                          todayDecoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.3),
-                            shape: BoxShape.circle,
-                          ),
-                          selectedDecoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          markerDecoration: const BoxDecoration(
-                            color: AppColors.accent,
-                            shape: BoxShape.circle,
-                          ),
-                          outsideDaysVisible: false,
-                        ),
-                      ),
-                    ),
                   ),
                 ),
-              ),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-              // ── Task List for Selected Day ──────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        isSameDay(_selectedDay, DateTime.now()) 
-                          ? "Today's Tasks" 
-                          : DateFormat('MMM d, yyyy').format(_selectedDay ?? DateTime.now()),
-                        style: AppTextStyles.headingSmall,
-                      ),
-                      if (todayPending.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(99),
-                          ),
-                          child: Text(
-                            '${todayPending.length} pending',
-                            style: AppTextStyles.labelSmall.copyWith(color: AppColors.primary),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-
-              if (selectedDayTasks.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _EmptyState(onAdd: () => _showAddTaskSheet(context, ref, _selectedDay)),
-                )
-              else ...[
-                // Pending Tasks
-                if (todayPending.isNotEmpty)
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (ctx, i) => _TaskTile(task: todayPending[i], ref: ref),
-                      childCount: todayPending.length,
-                    ),
-                  ),
-                
-                // Completed Tasks
-                if (todayDone.isNotEmpty) ...[
+  
+                if (selectedDayTasks.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _EmptyState(onAdd: () => _showAddTaskSheet(context, ref, _selectedDay)),
+                  )
+                else ...[
+                  // Pending Tasks
                   if (todayPending.isNotEmpty)
-                    const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        child: Divider(color: AppColors.borderLight),
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (ctx, i) => _TaskTile(task: todayPending[i], ref: ref),
+                        childCount: todayPending.length,
                       ),
                     ),
+                  
+                  // Completed Tasks
+                  if (todayDone.isNotEmpty) ...[
+                    if (todayPending.isNotEmpty)
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          child: Divider(color: AppColors.borderLight),
+                        ),
+                      ),
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (ctx, i) => _TaskTile(task: todayDone[i], ref: ref),
+                        childCount: todayDone.length,
+                      ),
+                    ),
+                  ],
+                ],
+  
+                // ── Overdue Warn ───────────────────────────────────────────
+                if (overdue.isNotEmpty) ...[
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                   SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                      child: Text(
+                        'Overdue (${overdue.length})',
+                        style: AppTextStyles.labelLarge.copyWith(color: AppColors.error),
+                      ),
+                    ),
+                  ),
                   SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (ctx, i) => _TaskTile(task: todayDone[i], ref: ref),
-                      childCount: todayDone.length,
+                      (ctx, i) => _TaskTile(task: overdue[i], ref: ref),
+                      childCount: overdue.length,
                     ),
                   ),
                 ],
+  
+                const SliverToBoxAdapter(child: SizedBox(height: 100)),
               ],
-
-              // ── Overdue Warn ───────────────────────────────────────────
-              if (overdue.isNotEmpty) ...[
-                const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-                    child: Text(
-                      'Overdue (${overdue.length})',
-                      style: AppTextStyles.labelLarge.copyWith(color: AppColors.error),
-                    ),
-                  ),
-                ),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (ctx, i) => _TaskTile(task: overdue[i], ref: ref),
-                    childCount: overdue.length,
-                  ),
-                ),
-              ],
-
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
-            ],
+            ),
           ),
         ),
       ),
@@ -322,6 +355,7 @@ class _TaskTile extends StatelessWidget {
         child: const PhosphorIcon(PhosphorIconsRegular.trash, color: AppColors.error),
       ),
       confirmDismiss: (_) async {
+        HapticFeedback.heavyImpact();
         ref.read(plannerProvider.notifier).deleteTask(task.id);
         return false;
       },
@@ -332,7 +366,10 @@ class _TaskTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: () => ref.read(plannerProvider.notifier).toggleDone(task.id),
+            onTap: () {
+              HapticFeedback.mediumImpact();
+              ref.read(plannerProvider.notifier).toggleDone(task.id);
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
@@ -486,6 +523,7 @@ class _TaskTile extends StatelessWidget {
 
 // ── Empty State ─────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
+  // onAdd kept for API compatibility but we no longer show a duplicate button
   final VoidCallback onAdd;
   const _EmptyState({required this.onAdd});
 
@@ -513,24 +551,19 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          const Text('No tasks today', style: AppTextStyles.headingMedium),
+          const Text('No tasks for this day', style: AppTextStyles.headingMedium),
           const SizedBox(height: 8),
           Text(
-            'Enjoy your free time, or schedule\nnew clinical duties and exams.',
+            'Enjoy your free time, or tap \'+\' below\nto add clinical duties and exams.',
             textAlign: TextAlign.center,
             style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 28),
-          ElevatedButton.icon(
-            onPressed: onAdd,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            icon: const PhosphorIcon(PhosphorIconsRegular.plus, color: Colors.white, size: 18),
-            label: Text('Schedule Task', style: AppTextStyles.labelMedium.copyWith(color: Colors.white)),
+          const SizedBox(height: 20),
+          // Subtle arrow pointing down to the FAB — no duplicate button
+          const PhosphorIcon(
+            PhosphorIconsRegular.arrowDown,
+            color: AppColors.primary,
+            size: 24,
           ),
         ],
       ),

@@ -1,19 +1,23 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:uuid/uuid.dart';
 import '../models/chat_message.dart';
 import '../../core/services/gemini_service.dart';
+import '../../core/services/intelligence_service.dart';
+import '../../core/services/hive_service.dart';
 import '../../core/services/kelly_context_service.dart';
 import '../../core/services/kelly_emotion_service.dart';
 import 'kelly_state_provider.dart';
 import 'chat_safety_provider.dart';
 import 'chat_session_provider.dart';
-import 'usage_provider.dart';
-import '../../core/constants/app_constants.dart';
-import '../../core/router/app_router.dart';
 import '../../planner/providers/planner_provider.dart';
+import 'dart:async';
 
-/// Provides the singleton Gemini API handler.
+/// Provides the singleton Intelligence API gateway.
+final intelligenceServiceProvider = Provider<IntelligenceService>((ref) => IntelligenceService.instance);
+
+/// Provides the local Gemini Service to handle function calling natively.
 final geminiServiceProvider = Provider<GeminiService>((ref) => GeminiService());
 
 /// Indicates whether Kelly is currently loading her context (first session init).
@@ -61,76 +65,69 @@ class ChatMessagesNotifier extends StateNotifier<List<ChatMessage>> {
     }
 
     try {
-      final contextService = KellyContextService.instance;
-      final geminiService = _ref.read(geminiServiceProvider);
+      final localContext = LocalContextService.instance;
+      final gemini = _ref.read(geminiServiceProvider);
 
-      // ── Part 1: System prompt (always injected) ─────────────────────────────
-      final contextSummary = contextService.buildUserContextSummary();
+      // ── Part 1: Initial Greeting ──────────────────────────────────────────
+      if (sessionId == null) {
+        state = [_buildGreeting()];
+        final snapshot = localContext.buildLocalSnapshot();
+        gemini.startSessionWithContext(userContextSummary: snapshot.toString());
+        return;
+      }
 
-      // ── Part 2: Gemini history — ONLY for saved sessions ────────────────────
-      // New Chat → empty history. This is the efficiency fix: no token waste.
-      final geminiHistory = sessionId != null
-          ? contextService.buildChatHistory(sessionId: sessionId, limit: 15)
-          : <Content>[];
+      // ── Part 2: Session Rehydration (Hybrid) ──────────────────────────────
+      // On launch/session switch, we rehydrate from local first for speed
+      final localSnapshot = localContext.buildLocalSnapshot();
+      
+      // Load UI messages from local Hive
+      final allMessages = HiveService.chatBox.values
+          .where((m) => m.sessionId == sessionId)
+          .toList();
+      allMessages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
+      
+      final recent = allMessages.length > 15 
+          ? allMessages.sublist(allMessages.length - 15) 
+          : allMessages;
 
-      geminiService.startSessionWithContext(
-        userContextSummary: contextSummary,
-        history: geminiHistory,
+      final uiMessages = recent.map((m) => ChatMessage(
+        id: m.id,
+        text: m.content,
+        isUser: m.role == 'user',
+        timestamp: m.sentAt,
+      )).toList();
+
+      state = uiMessages.isNotEmpty ? uiMessages : [_buildGreeting()];
+
+      // ── Part 3: Backend Warm-up (Cold Start Handling) ─────────────────────
+      gemini.startSessionWithContext(
+        userContextSummary: localSnapshot.toString(),
+        history: uiMessages.map((m) => Content(
+          m.isUser ? 'user' : 'model',
+          [TextPart(m.text)],
+        )).toList(),
       );
 
-      // ── Part 3: UI messages ─────────────────────────────────────────────────
-      if (sessionId != null) {
-        // Reload the saved session's messages for display
-        final hiveMessages = contextService.buildChatHistory(
-          sessionId: sessionId,
-          limit: 15,
-        );
-        final uiMessages = hiveMessages.map((content) {
-          final isUser = content.role == 'user';
-          final textContent = content.parts
-              .map((p) => p is TextPart ? p.text : '')
-              .where((t) => t.isNotEmpty)
-              .join();
-          return ChatMessage(
-            id: _uuid.v4(),
-            text: textContent,
-            isUser: isUser,
-            timestamp: DateTime.now(),
-          );
-        }).toList();
-        state = uiMessages.isNotEmpty ? uiMessages : [_buildGreeting()];
-      } else {
-        // New Chat — always start fresh with a mood-aware greeting
-        state = [_buildGreeting()];
-      }
     } catch (e) {
-      // Fallback: plain session with greeting
-      _ref.read(geminiServiceProvider).startChat();
       state = [_buildGreeting()];
     } finally {
       _ref.read(chatInitializingProvider.notifier).state = false;
     }
   }
 
-  /// Builds a context-aware greeting for Kelly.
-  /// If the user already logged their mood today, she acknowledges it.
-  /// Otherwise she asks how they're feeling.
+  /// Builds a grounded, local-aware greeting for Kelly.
   ChatMessage _buildGreeting() {
     String greetingText;
     try {
       final now = DateTime.now();
-      final todayMoods = KellyContextService.instance.getTodayMood(now);
-      if (todayMoods != null) {
-        final mood = todayMoods.toLowerCase();
-        greetingText =
-            "Hey! I see you're feeling $mood today 😊 I'm right here if you want to talk about it, vent, or just need someone to listen.";
+      final todayMood = LocalContextService.instance.getTodayMood(now);
+      if (todayMood != null) {
+        greetingText = "Hey! I see you're feeling ${todayMood.toLowerCase()} today 😊 I'm right here if you want to talk about it.";
       } else {
-        greetingText =
-            "Hi there! I'm Kelly, your Nursing Student companion. I'm here if you need to vent about clinicals, stress, or just talk through your day. How are you feeling right now?";
+        greetingText = "Hi there! I'm Kelly. I'm here if you need to vent about clinicals or just talk. How are you feeling right now?";
       }
     } catch (_) {
-      greetingText =
-          "Hi there! I'm Kelly, your Nursing Student companion. I'm here if you need to vent about clinicals, stress, or just talk through your day. How are you feeling right now?";
+      greetingText = "Hi! I'm Kelly. How can I help you today?";
     }
     return ChatMessage(
       id: 'init_${DateTime.now().millisecondsSinceEpoch}',
@@ -144,16 +141,13 @@ class ChatMessagesNotifier extends StateNotifier<List<ChatMessage>> {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
-    // 1. Empathy Hook: Detect sentiment to animate Kelly mascot.
     final emotion = KellyEmotionService.detectEmotion(text);
     _ref.read(kellyEmotionProvider.notifier).state = emotion;
 
-    // 1b. Safety Check: If crisis keywords are found, activate the persistent bar.
     if (KellyEmotionService.isCrisis(text)) {
       _ref.read(isCrisisActiveProvider.notifier).state = true;
     }
 
-    // 1c. Session Check: Create a new session if none exists
     String? currentSessionId = _ref.read(currentSessionIdProvider);
     if (currentSessionId == null) {
       final sessionNotifier = _ref.read(chatSessionsProvider.notifier);
@@ -161,7 +155,7 @@ class ChatMessagesNotifier extends StateNotifier<List<ChatMessage>> {
       currentSessionId = newSession.id;
     }
 
-    // 2. Optimistic UI: Add user message instantly.
+    // 1. Optimistic UI
     final userMsg = ChatMessage(
       id: _uuid.v4(),
       text: text,
@@ -171,136 +165,116 @@ class ChatMessagesNotifier extends StateNotifier<List<ChatMessage>> {
     );
     state = [...state, userMsg];
 
-    // 3. Persist user message to Hive.
-    await KellyContextService.instance.persistMessage(
+    // 2. Persist Locally
+    await LocalContextService.instance.persistMessage(
       content: text,
       role: 'user',
       sessionId: currentSessionId,
     );
 
-    // Update Session Time
-    await _ref.read(chatSessionsProvider.notifier).updateSessionTime(currentSessionId);
+    // 3. Backend Intelligence Call
+    _ref.read(chatLoadingProvider.notifier).state = true;
+    final startedSessionId = currentSessionId;
 
-    // Check Usage Limits
-    final usage = _ref.read(usageProvider);
-    if (usage.messagesRemaining <= 0) {
-      final restingMsg = ChatMessage(
+    try {
+      // Step A: Update Gemini context on the fly
+      final gemini = _ref.read(geminiServiceProvider);
+      
+      // Step B: Chat with Kelly and provide tool execution handlers
+      final reply = await gemini.sendMessage(
+        text: text,
+        onToolCall: (call) async {
+          if (call.name == 'add_academic_task') {
+            final args = call.args;
+            final title = args['title'] as String;
+            final categoryStr = args['category'] as String;
+            final dueDateStr = args['due_date'] as String;
+            final desc = args['description'] as String?;
+            
+            var dueDate = DateTime.parse(dueDateStr);
+            if (dueDate.isUtc) {
+              dueDate = dueDate.toLocal();
+            }
+            // If Kelly provides no specific time (midnight), default to end of day so it doesn't instantly become overdue
+            if (dueDate.hour == 0 && dueDate.minute == 0) {
+              dueDate = DateTime(dueDate.year, dueDate.month, dueDate.day, 23, 59);
+            }
+            
+            final plannerNotifier = _ref.read(plannerProvider.notifier);
+            await plannerNotifier.addTask(
+              title: title,
+              category: categoryStr,
+              dueDate: dueDate,
+              description: desc,
+            );
+            
+            return {'status': 'success', 'message': 'Task added to planner'};
+          }
+          
+          if (call.name == 'get_upcoming_tasks') {
+            final dateStr = call.args['date'] as String;
+            final date = DateTime.parse(dateStr);
+            final tasks = _ref.read(plannerProvider).where((t) => 
+               t.dueDate.year == date.year &&
+               t.dueDate.month == date.month &&
+               t.dueDate.day == date.day
+            ).toList();
+            
+            return {
+              'status': 'success', 
+              'tasks': tasks.map((t) => {'title': t.title, 'category': t.category}).toList()
+            };
+          }
+          
+          return {'error': 'Tool not found'};
+        }
+      );
+
+      if (_ref.read(currentSessionIdProvider) != startedSessionId) return;
+
+      // 4. Success Path
+      await LocalContextService.instance.persistMessage(
+        content: reply,
+        role: 'assistant',
+        sessionId: startedSessionId,
+      );
+
+      final aiMsg = ChatMessage(
         id: _uuid.v4(),
-        text: "I'm taking a short rest to recharge so I can give you my best focus tomorrow. Let's talk again then! 💙",
+        text: reply,
+        isUser: false,
+        timestamp: DateTime.now(),
+        detectedEmotion: emotion,
+      );
+
+      _ref.read(chatLoadingProvider.notifier).state = false;
+      state = [...state, aiMsg];
+
+    } catch (e) {
+      // 5. Offline / Timeout Fallback Path
+      debugPrint('ChatFlow: Failed. Error: $e');
+      
+      if (_ref.read(currentSessionIdProvider) != startedSessionId) return;
+
+      final snapshot = LocalContextService.instance.buildLocalSnapshot();
+      final todayMood = snapshot['todayMood']?.toString().toLowerCase();
+      
+      String fallbackText = "I'm having a little trouble connecting to my internal wisdom right now... ";
+      if (todayMood != null) {
+        fallbackText += "but I'm still here for you. I noticed you're feeling $todayMood today—remember to be gentle with yourself. Let's keep talking once I'm back online! 🌟";
+      } else {
+        fallbackText += "but I'm still listening. Let's continue our chat as soon as my connection is stable! ✨";
+      }
+
+      final aiMsg = ChatMessage(
+        id: _uuid.v4(),
+        text: fallbackText,
         isUser: false,
         timestamp: DateTime.now(),
       );
-      state = [...state, restingMsg];
-      return;
-    }
 
-    // 4. Show "Kelly is typing..."
-    _ref.read(chatLoadingProvider.notifier).state = true;
-
-    // 5. Get Gemini reply.
-    final service = _ref.read(geminiServiceProvider);
-    
-    // Safety: Capture the session ID when we started.
-    final startedSessionId = currentSessionId;
-
-    final reply = await service.sendMessage(
-      text: text,
-      onToolCall: (call) async {
-        // If the user switched sessions while we were waiting for Gemini,
-        // abort the tool call to prevent state corruption.
-        if (_ref.read(currentSessionIdProvider) != startedSessionId) {
-          return {'status': 'error', 'message': 'session_changed'};
-        }
-
-        if (call.name == 'add_academic_task') {
-          try {
-            final args = call.args;
-            final title = args['title'] as String;
-            final category = args['category'] as String;
-            final dueDateStr = args['due_date'] as String;
-            final description = args['description'] as String?;
-
-            final dueDate = DateTime.parse(dueDateStr);
-            
-            await _ref.read(plannerProvider.notifier).addTask(
-              title: title,
-              category: category,
-              dueDate: dueDate,
-              description: description,
-            );
-            
-            return {'status': 'success', 'message': 'Task added to planner successfully.'};
-          } catch (e) {
-            return {'status': 'error', 'message': e.toString()};
-          }
-        } else if (call.name == 'get_upcoming_tasks') {
-          try {
-            final args = call.args;
-            final dateStr = args['date'] as String;
-            final queryDate = DateTime.parse(dateStr);
-            
-            final allTasks = _ref.read(plannerProvider);
-            final dayTasks = allTasks.where((t) => 
-              t.dueDate.year == queryDate.year && 
-              t.dueDate.month == queryDate.month && 
-              t.dueDate.day == queryDate.day
-            ).toList();
-
-            if (dayTasks.isEmpty) {
-              return {'status': 'success', 'message': 'No tasks scheduled for this date.'};
-            }
-
-            final taskSummaries = dayTasks.map((t) {
-              final timeStr = '${t.dueDate.hour}:${t.dueDate.minute.toString().padLeft(2, '0')}';
-              final status = t.isCompleted ? 'Done' : 'Pending';
-              return '${t.title} ($timeStr) - $status';
-            }).toList();
-
-            return {
-              'status': 'success',
-              'tasks': taskSummaries,
-            };
-          } catch (e) {
-            return {'status': 'error', 'message': e.toString()};
-          }
-        }
-        return {'status': 'error', 'message': 'unknown_function'};
-      },
-    );
-
-    // If the user switched sessions during the API call, ignore the reply.
-    if (_ref.read(currentSessionIdProvider) != startedSessionId) {
       _ref.read(chatLoadingProvider.notifier).state = false;
-      return;
+      state = [...state, aiMsg];
     }
-
-    // Increment Usage Count
-    _ref.read(usageProvider.notifier).incrementUsage();
-
-    // 6. Persist Kelly's reply to Hive.
-    await KellyContextService.instance.persistMessage(
-      content: reply,
-      role: 'assistant',
-      sessionId: currentSessionId,
-    );
-
-    // Determine Contextual Action
-    String? suggestedAction;
-    if (emotion == AppConstants.kellyConcerned || emotion == AppConstants.kellySad || KellyEmotionService.isCrisis(text)) {
-      suggestedAction = AppRoutes.breathing;
-    }
-
-    // 7. Publish AI message & clear loading.
-    final aiMsg = ChatMessage(
-      id: _uuid.v4(),
-      text: reply,
-      isUser: false,
-      timestamp: DateTime.now(),
-      detectedEmotion: emotion, // Pass emotion so the bubble renders the correct chathead
-      suggestedAction: suggestedAction,
-    );
-
-    _ref.read(chatLoadingProvider.notifier).state = false;
-    state = [...state, aiMsg];
   }
 }

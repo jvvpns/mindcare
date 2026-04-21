@@ -1,16 +1,15 @@
+import '../../core/models/burnout_risk.dart';
+import '../../core/providers/sync_provider.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/models/mood_log.dart';
 import '../../core/models/planner_entry.dart';
 import '../../clinical_duty/models/shift_task.dart';
-import '../../core/services/burnout_service.dart';
 import '../../chatbot/widgets/kelly_orb_mascot.dart';
-import '../../chatbot/providers/kelly_state_provider.dart';
 import '../providers/dashboard_interaction_provider.dart';
 import '../providers/streak_provider.dart';
 import '../../mood_tracking/providers/mood_provider.dart';
@@ -83,30 +82,22 @@ class DashboardHeader extends ConsumerWidget {
     }
   }
 
-  // Maps current emotion to a contrasting color
   Color _getKellyCardColor(String emotion) {
     switch (emotion.toLowerCase()) {
       case 'default':
       case 'energetic':
-        // Orb is white/grey -> Card becomes Soft Pastel Blue
         return AppColors.emotionToColors['happy']![0].withValues(alpha: 0.85);
       case 'happy':
-        // Orb is Sky Blue -> Card becomes Soft Peach/Coral
         return AppColors.emotionToColors['concerned']![0].withValues(alpha: 0.85);
       case 'calm':
-        // Orb is Teal -> Card becomes Soft Lavender
         return AppColors.emotionToColors['sad']![0].withValues(alpha: 0.85);
       case 'sad':
-        // Orb is Lavender -> Card becomes Soft Teal
         return AppColors.emotionToColors['calm']![0].withValues(alpha: 0.85);
       case 'excited':
-        // Orb is Gold -> Card becomes Soft Pink
         return AppColors.emotionToColors['surprised']![0].withValues(alpha: 0.85);
       case 'concerned':
-        // Orb is Peach -> Card becomes Soft Blue
         return AppColors.emotionToColors['happy']![0].withValues(alpha: 0.85);
       case 'surprised':
-        // Orb is Pink -> Card becomes Soft Gold
         return AppColors.emotionToColors['excited']![0].withValues(alpha: 0.85);
       default:
         return AppColors.emotionToColors['happy']![0].withValues(alpha: 0.85);
@@ -144,7 +135,11 @@ class DashboardHeader extends ConsumerWidget {
     final shiftTasks = ref.watch(shiftProvider);
     final streakCount = ref.watch(streakProvider);
     
+    final isDesktop = MediaQuery.of(context).size.width > 900;
+    
     final todayTasks = plannerEntries.where((e) => e.isDueToday && !e.isCompleted).toList();
+    
+    final syncStatus = ref.watch(syncStatusProvider).value ?? SyncUIState.idle;
     
     final message = pokedMessage ?? _getMoodAnalysis(
       todayMood, 
@@ -246,6 +241,12 @@ class DashboardHeader extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: const BoxDecoration(color: AppColors.surface, shape: BoxShape.circle),
+                  child: _buildSyncIcon(syncStatus),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(color: AppColors.surface, shape: BoxShape.circle),
                   child: const PhosphorIcon(PhosphorIconsRegular.bell, color: AppColors.textPrimary, size: 20),
                 ),
               ],
@@ -253,7 +254,8 @@ class DashboardHeader extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 24),
-        GestureDetector(
+        if (!isDesktop) // Only show the full card on Mobile/Tablet
+          GestureDetector(
           onTap: () => ref.read(kellyPokedMessageProvider.notifier).poke(),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
@@ -332,8 +334,47 @@ class DashboardHeader extends ConsumerWidget {
               ),
             ),
           ),
-        ),
+        ) else // On Desktop, show a compact "Clinical Pulse" bar instead
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(PhosphorIconsFill.lightning, color: AppColors.primary, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w500),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
+  }
+
+  Widget _buildSyncIcon(SyncUIState state) {
+    switch (state) {
+      case SyncUIState.syncing:
+        return const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(AppColors.primary)),
+        );
+      case SyncUIState.pending:
+        return const PhosphorIcon(PhosphorIconsRegular.cloudArrowUp, color: AppColors.textTertiary, size: 20);
+      case SyncUIState.error:
+        return const PhosphorIcon(PhosphorIconsFill.cloudWarning, color: AppColors.crisis, size: 20);
+      case SyncUIState.idle:
+        return const PhosphorIcon(PhosphorIconsRegular.cloudCheck, color: AppColors.success, size: 20);
+    }
   }
 }

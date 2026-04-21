@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/router/app_router.dart';
+import '../../core/providers/update_provider.dart';
+import '../../core/constants/app_constants.dart';
 
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerWidget {
   final Widget child;
 
   const MainShell({super.key, required this.child});
@@ -23,16 +27,43 @@ class MainShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = _selectedIndex(context);
+    final hasUpdate = ref.watch(updateProvider);
 
     return Scaffold(
-      body: child,
+      body: Column(
+        children: [
+          if (hasUpdate)
+            MaterialBanner(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: const Icon(PhosphorIconsFill.sparkle, color: Colors.white),
+              content: Text(
+                'A new version of HILWAY is available!',
+                style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
+              ),
+              backgroundColor: AppColors.primary,
+              actions: [
+                TextButton(
+                  onPressed: () => ref.read(updateProvider.notifier).updateApp(),
+                  child: Text(
+                    'UPDATE NOW',
+                    style: AppTextStyles.labelLarge.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          Expanded(child: child),
+        ],
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.push(AppRoutes.chatbot),
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            context.push(AppRoutes.chatbot);
+          },
           customBorder: const CircleBorder(),
           child: Hero(
             tag: 'kelly_orb_hero',
@@ -131,7 +162,10 @@ class MainShell extends StatelessWidget {
   }) {
     return Expanded(
       child: InkWell(
-        onTap: () => context.go(route),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          context.go(route);
+        },
         borderRadius: BorderRadius.circular(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
