@@ -11,8 +11,12 @@ import 'core/services/safety_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── Load Env ──────────────────────────────────────────────────────────────
-  await dotenv.load(fileName: ".env");
+  // ── Load Env (graceful fallback for Flutter Web where .env may not be bundled) ──
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('⚠️ .env not found — using fallback values from AppConstants. ($e)');
+  }
 
   // ── Hive (adapters + encrypted boxes) ────────────────────────────────────
   await HiveService.init();

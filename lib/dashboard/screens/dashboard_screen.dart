@@ -65,42 +65,44 @@ class DashboardScreen extends ConsumerWidget {
         emotion: effectiveEmotion,
         child: SafeArea(
           child: ResponsiveWrapper(
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      DashboardHeader(
-                        userName: userName,
-                        quote: dailyQuote,
-                        effectiveEmotion: effectiveEmotion,
-                        burnoutLevel: burnoutLevel,
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      _buildVitalsBento(context, ref),
-                      const SizedBox(height: 24),
-  
-                      if (burnoutLevel == BurnoutLevel.high) _buildBurnoutAlert(context),
-                      if (burnoutLevel == BurnoutLevel.high) const SizedBox(height: 16),
-  
-                      MoodCheckerRow(),
-                      const SizedBox(height: 24),
-  
-                      RefuelChart(),
-                      const SizedBox(height: 24),
-  
-                      HeroJournalCard(),
-                      const SizedBox(height: 24),
-  
-                      _buildToolGrid(context, ref),
-                      const SizedBox(height: 48),
-                    ]),
+            child: RepaintBoundary(
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        DashboardHeader(
+                          userName: userName,
+                          quote: dailyQuote,
+                          effectiveEmotion: effectiveEmotion,
+                          burnoutLevel: burnoutLevel,
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        RepaintBoundary(child: _buildVitalsBento(context, ref)),
+                        const SizedBox(height: 24),
+    
+                        if (burnoutLevel == BurnoutLevel.high) _buildBurnoutAlert(context),
+                        if (burnoutLevel == BurnoutLevel.high) const SizedBox(height: 16),
+    
+                        const MoodCheckerRow(),
+                        const SizedBox(height: 24),
+    
+                        const RepaintBoundary(child: RefuelChart()),
+                        const SizedBox(height: 24),
+    
+                        const HeroJournalCard(),
+                        const SizedBox(height: 24),
+    
+                        RepaintBoundary(child: _buildToolGrid(context, ref)),
+                        const SizedBox(height: 48),
+                      ]),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

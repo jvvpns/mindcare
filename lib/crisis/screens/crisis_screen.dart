@@ -1,16 +1,19 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/constants/philippines_schools.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../shared/widgets/hilway_background.dart';
 import '../../shared/widgets/hilway_card.dart';
 import '../../shared/widgets/responsive_wrapper.dart';
 
-class CrisisScreen extends StatelessWidget {
+class CrisisScreen extends ConsumerWidget {
   const CrisisScreen({super.key});
 
   Future<void> _makeCall(String number) async {
@@ -28,7 +31,15 @@ class CrisisScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final userSchoolName = authState.user?.userMetadata?['school'] as String?;
+    
+    // Find matching school info
+    final schoolInfo = AppSchools.capizNursingSchools.where(
+      (s) => s.name == userSchoolName
+    ).firstOrNull;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: HilwayBackground(
@@ -44,6 +55,26 @@ class CrisisScreen extends StatelessWidget {
                       const SizedBox(height: 20),
                       _buildEmergencyHeader(),
                       const SizedBox(height: 40),
+
+                    // ── School Specific Support ─────────────────────────────
+                    if (schoolInfo != null) ...[
+                      _buildSectionHeader('Your School Support'),
+                      _buildHotlineCard(
+                        context,
+                        title: schoolInfo.supportContact,
+                        number: 'Contact via Office',
+                        logoPath: schoolInfo.logoUrl,
+                        subtitle: schoolInfo.name,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildHotlineCard(
+                        context,
+                        title: 'Affiliated Hospital',
+                        number: schoolInfo.affiliatedHospital,
+                        icon: PhosphorIconsRegular.hospital,
+                      ),
+                      const SizedBox(height: 32),
+                    ],
                     
                     _buildSectionHeader('City Mental Health Helpline'),
                     _buildHotlineCard(
@@ -171,23 +202,37 @@ class CrisisScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHotlineCard(BuildContext context, {required String title, required String number, required IconData icon}) {
+  Widget _buildHotlineCard(BuildContext context, {
+    required String title, 
+    required String number, 
+    IconData? icon, 
+    String? logoPath,
+    String? subtitle,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: HilwayCard(
         isGlass: true,
         glowColor: AppColors.crisis.withValues(alpha: 0.15),
         padding: const EdgeInsets.all(16),
-        onTap: () => _makeCall(number),
+        onTap: () {
+          if (number.contains('0') || number.length < 5) {
+             _makeCall(number);
+          }
+        },
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              width: 48,
+              height: 48,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppColors.crisis.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: PhosphorIcon(icon, color: AppColors.crisis, size: 24),
+              child: logoPath != null 
+                ? ClipOval(child: Image.asset(logoPath, fit: BoxFit.contain))
+                : icon != null ? PhosphorIcon(icon, color: AppColors.crisis, size: 24) : null,
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -198,6 +243,13 @@ class CrisisScreen extends StatelessWidget {
                     title, 
                     style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
                   ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Text(
                     number, 

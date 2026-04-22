@@ -121,7 +121,7 @@ class _HilwayCardState extends State<HilwayCard>
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           width: widget.width,
           padding: widget.padding,

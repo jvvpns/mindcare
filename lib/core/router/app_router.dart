@@ -7,6 +7,7 @@ import '../../auth/screens/onboarding_screen.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../auth/screens/signup_screen.dart';
 import '../../auth/screens/tutorial_screen.dart';
+import '../../auth/screens/cinematic_intro_screen.dart';
 
 import '../../dashboard/screens/dashboard_screen.dart';
 import '../../dashboard/screens/splash_breathing_screen.dart';
@@ -41,6 +42,7 @@ import '../../core/constants/app_constants.dart';
 class AppRoutes {
   AppRoutes._();
 
+  static const String cinematicIntro = '/intro';
   static const String onboarding     = '/onboarding';
   static const String login          = '/login';
   static const String signup         = '/signup';
@@ -90,19 +92,8 @@ class RouterNotifier extends ChangeNotifier {
 final appRouterProvider = Provider<GoRouter>((ref) {
   final notifier = RouterNotifier(ref);
 
-  // Check initial flags for starting location
-  final hasSeenOnboarding = HiveService.settingsBox.get(
-    AppConstants.keyHasSeenOnboarding,
-    defaultValue: false,
-  ) as bool;
-
-  // Determine starting location
-  String initialLocation = AppRoutes.onboarding;
-  if (ref.read(authProvider).isAuthenticated) {
-    initialLocation = AppRoutes.splash;
-  } else if (hasSeenOnboarding) {
-    initialLocation = AppRoutes.login;
-  }
+  // Determine starting location — always start with cinematic intro
+  String initialLocation = AppRoutes.cinematicIntro;
 
   return GoRouter(
     refreshListenable: notifier,
@@ -123,6 +114,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ) as bool;
 
       final isAuthRoute = [
+        AppRoutes.cinematicIntro,
         AppRoutes.onboarding,
         AppRoutes.login,
         AppRoutes.signup,
@@ -132,6 +124,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       debugPrint('Router: path=\$currentPath, auth=\$isAuthenticated, seenOnboarding=\$hasSeenOnboardingReactive');
 
       // ── Access Control ─────────────────────────────────────────────────────
+
+      // 0. Cinematic intro always plays — never redirect away from it
+      if (currentPath == AppRoutes.cinematicIntro) {
+        return null;
+      }
 
       // 1. Logged In -> Prevent going back to login/signup/onboarding
       if (isAuthenticated && isAuthRoute && currentPath != AppRoutes.tutorial) {
@@ -154,6 +151,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      // ── Cinematic Intro (always plays first on cold start) ────────────
+      GoRoute(
+        path: AppRoutes.cinematicIntro,
+        name: 'cinematicIntro',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const CinematicIntroScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      ),
+
       // ── Auth screens (no bottom nav) ───────────────────────────────────
       GoRoute(
         path: AppRoutes.onboarding,

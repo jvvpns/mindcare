@@ -184,10 +184,43 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: HilwayBackground(
+        emotion: currentEmotion, // Dynamically change bg colors based on mood
         child: SafeArea(
           child: ResponsiveWrapper(
             child: Stack(
               children: [
+                // ── Background Mascot: Subtle personality layer ─────────────
+                Positioned(
+                  top: 80,
+                  left: 0,
+                  right: 0,
+                  child: Opacity(
+                    opacity: 0.15, // Non-intrusive subtle presence
+                    child: Center(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              blurRadius: 100,
+                              spreadRadius: 20,
+                            ),
+                          ],
+                        ),
+                        child: Hero(
+                          tag: 'kelly_orb_hero',
+                          child: KellyOrbMascot(
+                            emotion: currentEmotion, 
+                            isThinking: isLoading,
+                            size: 280, // Larger but very transparent
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
                 Column(
                   children: [
                   // ── Header: Glassmorphic Bar ──────────────────────────────
@@ -211,80 +244,53 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                                 },
                               ),
                               const SizedBox(width: 4),
-                              // ── Badges Container ─────────────────────────────────────
+                              // ── Kelly Profile Details (Messenger Style) ─────────────────
                               Expanded(
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  physics: const BouncingScrollPhysics(),
+                                child: InkWell(
+                                  onTap: () => ref.read(chatTutorialProvider.notifier).showTutorial(),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      // ── Privacy Badge ───────────────────────────────────────
-                                      InkWell(
-                                        onTap: _showPrivacyInfo,
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.surfaceSecondary,
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              const PhosphorIcon(PhosphorIconsRegular.shieldCheck, size: 14, color: AppColors.primary),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                'Private & Encrypted',
-                                                style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                                      // Small Avatar Orb
+                                      KellyMiniOrb(
+                                        emotion: currentEmotion,
+                                        size: 32,
                                       ),
-                                      const SizedBox(width: 8),
-                                      // ── Energy Badge ────────────────────────────────────────
-                                      InkWell(
-                                        onTap: _showEnergyInfo,
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: isEnergyLow 
-                                              ? AppColors.error.withValues(alpha: 0.1) 
-                                              : AppColors.surfaceSecondary,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: isEnergyLow ? AppColors.error.withValues(alpha: 0.2) : Colors.transparent,
-                                              width: 1,
+                                      const SizedBox(width: 12),
+                                      // Name & Status
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Text(
+                                              'Kelly',
+                                              style: TextStyle(
+                                                fontFamily: 'PlusJakartaSans',
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.textPrimary,
+                                              ),
                                             ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              PhosphorIcon(
-                                                PhosphorIconsRegular.lightning, 
-                                                size: 14, 
-                                                color: isEnergyLow ? AppColors.error : AppColors.accent,
+                                            Text(
+                                              isLoading ? 'Kelly is thinking...' : 'Active now',
+                                              style: TextStyle(
+                                                fontFamily: 'PlusJakartaSans',
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                                color: isLoading ? AppColors.primary : AppColors.success,
                                               ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                'Energy: $energyRemaining',
-                                                style: AppTextStyles.labelSmall.copyWith(
-                                                  color: isEnergyLow ? AppColors.error : AppColors.textPrimary,
-                                                  fontWeight: isEnergyLow ? FontWeight.bold : FontWeight.normal,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 4),
+                              // ── Utility Actions ────────────────────────────────────────
                               IconButton(
                                 tooltip: 'New Chat',
-                                icon: const PhosphorIcon(PhosphorIconsRegular.pencilSimple, color: AppColors.textSecondary),
+                                icon: const PhosphorIcon(PhosphorIconsRegular.pencilSimple, color: AppColors.textSecondary, size: 20),
                                 onPressed: () {
                                   ref.read(currentSessionIdProvider.notifier).state = null;
                                   _messageController.clear();
@@ -292,7 +298,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                               ),
                               IconButton(
                                 tooltip: 'History',
-                                icon: const PhosphorIcon(PhosphorIconsRegular.clock, color: AppColors.textSecondary),
+                                icon: const PhosphorIcon(PhosphorIconsRegular.clock, color: AppColors.textSecondary, size: 20),
                                 onPressed: () => context.push(AppRoutes.chatHistory),
                               ),
                               IconButton(
@@ -313,62 +319,55 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                     ),
                   ),
   
-                  // ── Kelly Orb Mascot ──────────────────────────────────────
-                  Hero(
-                    tag: 'kelly_orb_hero',
-                    child: KellyOrbMascot(emotion: currentEmotion, isThinking: isLoading),
-                  ),
-                  const SizedBox(height: 8),
-              
-              // ── Chat List Area ──────────────────────────────────────────
-              Expanded(
-                child: isInitializing
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const CircularProgressIndicator(),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Kelly is getting ready...',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
+                  // ── Chat List Area: Now maximizes usable space ──────────────────
+                  Expanded(
+                    child: isInitializing
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircularProgressIndicator(),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Kelly is getting ready...',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                      itemCount: messages.length + (isLoading ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        // Typing Indicator is the last item if loading
+                        if (isLoading && index == messages.length) {
+                          return const TypingIndicator();
+                        }
+      
+                        final message = messages[index];
+                        // Slide + fade entrance for Kelly's replies
+                        if (!message.isUser) {
+                          return TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration: const Duration(milliseconds: 350),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, value, child) => Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, 18 * (1 - value)),
+                                child: child,
                               ),
                             ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  itemCount: messages.length + (isLoading ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    // Typing Indicator is the last item if loading
-                    if (isLoading && index == messages.length) {
-                      return const TypingIndicator();
-                    }
-  
-                    final message = messages[index];
-                    // Slide + fade entrance for Kelly's replies
-                    if (!message.isUser) {
-                      return TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.0, end: 1.0),
-                        duration: const Duration(milliseconds: 350),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, child) => Opacity(
-                          opacity: value,
-                          child: Transform.translate(
-                            offset: Offset(0, 18 * (1 - value)),
-                            child: child,
-                          ),
-                        ),
-                        child: ChatMessageBubble(message: message),
-                      );
-                    }
-                    return ChatMessageBubble(message: message);
-                  },
-                ),
-              ),
+                            child: ChatMessageBubble(message: message),
+                          );
+                        }
+                        return ChatMessageBubble(message: message);
+                      },
+                    ),
+                  ),
               
               // ── Crisis Bar (persistent once triggered) ─────────────────────
               AnimatedSwitcher(
@@ -397,7 +396,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                 ),
               
                     // ── Input Area ──────────────────────────────────────────────────
-                    _buildInputArea(hasEnergy),
+                    _buildInputArea(hasEnergy, energyRemaining, isEnergyLow),
                   ],
                 ),
                 
@@ -456,7 +455,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     // Remove duplicates and limit
     final uniqueChips = chips.take(4).toList();
 
-    if (chips.isEmpty) return const SizedBox.shrink();
+    if (uniqueChips.isEmpty) return const SizedBox.shrink();
 
     return Container(
       height: 50,
@@ -464,9 +463,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         scrollDirection: Axis.horizontal,
-        itemCount: chips.length,
+        itemCount: uniqueChips.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (_, index) => chips[index],
+        itemBuilder: (_, index) => uniqueChips[index],
       ),
     );
   }
@@ -494,9 +493,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     );
   }
 
-  Widget _buildInputArea(bool hasEnergy) {
+  Widget _buildInputArea(bool hasEnergy, int energyRemaining, bool isEnergyLow) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.98),
         boxShadow: [
@@ -508,46 +507,95 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         ],
         border: Border(top: BorderSide(color: AppColors.primary.withValues(alpha: 0.1))),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              enabled: hasEnergy,
-              textCapitalization: TextCapitalization.sentences,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: hasEnergy ? AppColors.textPrimary : AppColors.textSecondary,
-              ),
-              decoration: InputDecoration(
-                hintText: hasEnergy ? 'Message Kelly...' : 'Kelly is resting...',
-                hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
-                filled: true,
-                fillColor: hasEnergy ? AppColors.background : AppColors.surfaceSecondary,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
+          // ── Usage Info: Subtle Bar ──────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: _showEnergyInfo,
+                  child: Row(
+                    children: [
+                      PhosphorIcon(
+                        PhosphorIconsFill.lightning, 
+                        size: 12, 
+                        color: isEnergyLow ? AppColors.error : AppColors.accent,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Kelly Energy: $energyRemaining left',
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: isEnergyLow ? AppColors.error : AppColors.textSecondary,
+                          fontWeight: isEnergyLow ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              onSubmitted: hasEnergy ? (_) => _sendMessage() : null,
+                GestureDetector(
+                  onTap: _showPrivacyInfo,
+                  child: Row(
+                    children: [
+                      const PhosphorIcon(PhosphorIconsFill.shieldCheck, size: 12, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Device Encrypted',
+                        style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 12),
-          InkWell(
-            onTap: hasEnergy ? _sendMessage : null,
-            borderRadius: BorderRadius.circular(24),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: hasEnergy ? AppColors.primary : AppColors.borderLight,
-                shape: BoxShape.circle,
+
+          // ── Main Input ──────────────────────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _messageController,
+                  enabled: hasEnergy,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: hasEnergy ? AppColors.textPrimary : AppColors.textSecondary,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: hasEnergy ? 'Message Kelly...' : 'Kelly is resting...',
+                    hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
+                    filled: true,
+                    fillColor: hasEnergy ? AppColors.background : AppColors.surfaceSecondary,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onSubmitted: hasEnergy ? (_) => _sendMessage() : null,
+                ),
               ),
-              child: PhosphorIcon(
-                hasEnergy ? PhosphorIconsRegular.paperPlaneTilt : PhosphorIconsRegular.coffee, 
-                color: hasEnergy ? Colors.white : AppColors.textTertiary, 
-                size: 20,
+              const SizedBox(width: 12),
+              InkWell(
+                onTap: hasEnergy ? _sendMessage : null,
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: hasEnergy ? AppColors.primary : AppColors.borderLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: PhosphorIcon(
+                    hasEnergy ? PhosphorIconsRegular.paperPlaneTilt : PhosphorIconsRegular.coffee, 
+                    color: hasEnergy ? Colors.white : AppColors.textTertiary, 
+                    size: 20,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
