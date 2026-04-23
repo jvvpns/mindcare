@@ -25,6 +25,7 @@ class LocalContextService {
 
   // ── 2. Persist Messages ───────────────────────────────────────────────────
   Future<void> persistMessage({
+    required String userId,
     required String content,
     required String role, // 'user' or 'assistant'
     bool isCrisisDetected = false,
@@ -33,13 +34,14 @@ class LocalContextService {
     try {
       final msg = hive_msg.ChatMessage(
         id: const Uuid().v4(),
+        userId: userId,
         content: content,
         role: role,
         sentAt: DateTime.now(),
         isCrisisDetected: isCrisisDetected,
         sessionId: sessionId,
       );
-      await HiveService.chatBox.add(msg);
+      await HiveService.chatBox.put(msg.id, msg);
       
       // Queue offline-first background sync
       SyncService.instance.queueUpsert(

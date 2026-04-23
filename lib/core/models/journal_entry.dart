@@ -23,8 +23,12 @@ class JournalEntry extends HiveObject {
   @HiveField(5)
   final DateTime updatedAt;
 
+  @HiveField(6, defaultValue: 'local')
+  final String userId;
+
   JournalEntry({
     required this.id,
+    required this.userId,
     required this.title,
     required this.content,
     this.moodIndex,
@@ -33,6 +37,7 @@ class JournalEntry extends HiveObject {
   });
 
   factory JournalEntry.create({
+    required String userId,
     required String title,
     required String content,
     double? moodIndex,
@@ -40,6 +45,7 @@ class JournalEntry extends HiveObject {
     final now = DateTime.now();
     return JournalEntry(
       id: const Uuid().v4(),
+      userId: userId,
       title: title,
       content: content,
       moodIndex: moodIndex,
@@ -53,9 +59,11 @@ class JournalEntry extends HiveObject {
     String? content,
     double? moodIndex,
     DateTime? updatedAt,
+    String? userId,
   }) {
     return JournalEntry(
       id: id,
+      userId: userId ?? this.userId,
       title: title ?? this.title,
       content: content ?? this.content,
       moodIndex: moodIndex ?? this.moodIndex,
@@ -68,9 +76,12 @@ class JournalEntry extends HiveObject {
   factory JournalEntry.fromMap(Map<String, dynamic> map) {
     return JournalEntry(
       id: map['id'] as String,
+      userId: map['user_id'] as String? ?? 'local',
       title: map['title'] as String,
       content: map['content'] as String,
-      moodIndex: map['mood_index'] != null ? (map['mood_index'] as num).toDouble() : null,
+      moodIndex: map['mood_index'] != null
+          ? (map['mood_index'] as num).toDouble()
+          : null,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
@@ -79,7 +90,7 @@ class JournalEntry extends HiveObject {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      // 'user_id' will be injected by SyncService
+      'user_id': userId,
       'title': title,
       'content': content,
       'mood_index': moodIndex,

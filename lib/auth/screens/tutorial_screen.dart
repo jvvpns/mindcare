@@ -23,9 +23,10 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
   final List<IconData> _icons = [
     Icons.favorite_rounded,
-    Icons.pets_rounded, // Not used anymore for Kelly
+    Icons.auto_awesome_rounded, // Kelly
     Icons.mood_rounded,
     Icons.calendar_today_rounded,
+    Icons.add_task_rounded,
     Icons.support_agent_rounded,
   ];
 
@@ -34,6 +35,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
     AppColors.accent,
     AppColors.secondary,
     AppColors.primary,
+    AppColors.accent,
     AppColors.secondary,
   ];
 

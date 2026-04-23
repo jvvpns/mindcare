@@ -23,13 +23,14 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
       sentAt: fields[3] as DateTime,
       isCrisisDetected: fields[4] as bool,
       sessionId: fields[5] as String?,
+      userId: fields[6] == null ? 'local' : fields[6] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, ChatMessage obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +42,9 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
       ..writeByte(4)
       ..write(obj.isCrisisDetected)
       ..writeByte(5)
-      ..write(obj.sessionId);
+      ..write(obj.sessionId)
+      ..writeByte(6)
+      ..write(obj.userId);
   }
 
   @override

@@ -26,8 +26,8 @@ class _HilwayBackgroundState extends State<HilwayBackground>
   // ── Color transition controller ─────────────────────────────────────────
   late final AnimationController _colorController;
 
-  // ── Touch orb state ──────────────────────────────────────────────────────
-  Offset? _touchPos;
+  // ── Touch orb state (Isolated via ValueNotifier to prevent full-screen rebuilds) ──
+  final ValueNotifier<Offset?> _touchNotifier = ValueNotifier<Offset?>(null);
   Offset _orbPos = const Offset(0, 0);
 
   // ── Orb animations ───────────────────────────────────────────────────────
@@ -81,17 +81,15 @@ class _HilwayBackgroundState extends State<HilwayBackground>
   }
 
   void _onPointerMove(PointerEvent event) {
-    setState(() {
-      _touchPos = event.localPosition;
-      _orbPos = Offset(
-        _lerp(_orbPos.dx, event.localPosition.dx, 0.12),
-        _lerp(_orbPos.dy, event.localPosition.dy, 0.12),
-      );
-    });
+    _orbPos = Offset(
+      _lerp(_orbPos.dx, event.localPosition.dx, 0.12),
+      _lerp(_orbPos.dy, event.localPosition.dy, 0.12),
+    );
+    _touchNotifier.value = _orbPos;
   }
 
   void _onPointerUp(PointerEvent event) {
-    setState(() => _touchPos = null);
+    _touchNotifier.value = null;
   }
 
   static double _lerp(double a, double b, double t) => a + (b - a) * t;
@@ -118,34 +116,39 @@ class _HilwayBackgroundState extends State<HilwayBackground>
               child: ValueListenableBuilder<double>(
                 valueListenable: _scrollOffset,
                 builder: (context, scrollVal, _) {
-                  return RepaintBoundary(
-                    child: AnimatedBuilder(
-                      animation: Listenable.merge([_t1, _t2, _t3, _colorController]),
-                      builder: (context, _) {
-                        final color1 = Color.lerp(_currentColors[0], _targetColors[0], _colorController.value) ?? _currentColors[0];
-                        final color2 = Color.lerp(_currentColors[1], _targetColors[1], _colorController.value) ?? _currentColors[1];
-      
-                        final size = MediaQuery.of(context).size;
-                        
-                        // Base positions with drift
-                        final orb1 = Offset(size.width * _lerpV(0.05, 0.35, _t1.value), size.height * _lerpV(0.00, 0.18, _t2.value));
-                        final orb2 = Offset(size.width * _lerpV(0.55, 0.95, _t2.value), size.height * _lerpV(0.65, 0.95, _t3.value));
-                        final orb3 = Offset(size.width * _lerpV(0.60, 0.90, _t3.value), size.height * _lerpV(0.25, 0.50, _t1.value));
-      
-                        return CustomPaint(
-                          painter: _BackgroundPainter(
-                            orb1: orb1,
-                            orb2: orb2,
-                            orb3: orb3,
-                            baseColor: color1,
-                            accentColor: color2,
-                            emotion: widget.emotion,
-                            touchOrb: _touchPos != null ? _orbPos : null,
-                            scrollOffset: scrollVal,
-                          ),
-                        );
-                      },
-                    ),
+                  return ValueListenableBuilder<Offset?>(
+                    valueListenable: _touchNotifier,
+                    builder: (context, touchVal, _) {
+                      return RepaintBoundary(
+                        child: AnimatedBuilder(
+                          animation: Listenable.merge([_t1, _t2, _t3, _colorController]),
+                          builder: (context, _) {
+                            final color1 = Color.lerp(_currentColors[0], _targetColors[0], _colorController.value) ?? _currentColors[0];
+                            final color2 = Color.lerp(_currentColors[1], _targetColors[1], _colorController.value) ?? _currentColors[1];
+          
+                            final size = MediaQuery.of(context).size;
+                            
+                            // Base positions with drift
+                            final orb1 = Offset(size.width * _lerpV(0.05, 0.35, _t1.value), size.height * _lerpV(0.00, 0.18, _t2.value));
+                            final orb2 = Offset(size.width * _lerpV(0.55, 0.95, _t2.value), size.height * _lerpV(0.65, 0.95, _t3.value));
+                            final orb3 = Offset(size.width * _lerpV(0.60, 0.90, _t3.value), size.height * _lerpV(0.25, 0.50, _t1.value));
+          
+                            return CustomPaint(
+                              painter: _BackgroundPainter(
+                                orb1: orb1,
+                                orb2: orb2,
+                                orb3: orb3,
+                                baseColor: color1,
+                                accentColor: color2,
+                                emotion: widget.emotion,
+                                touchOrb: touchVal,
+                                scrollOffset: scrollVal,
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
                   );
                 },
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../auth/providers/auth_provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/models/chat_session.dart';
 import '../../core/services/hive_service.dart';
@@ -10,7 +11,10 @@ final currentSessionIdProvider = StateProvider<String?>((ref) => null);
 
 /// Interacts with the Hive box for chat sessions.
 final chatSessionsProvider = StateNotifierProvider<ChatSessionsNotifier, List<ChatSession>>(
-  (ref) => ChatSessionsNotifier(ref),
+  (ref) {
+    ref.watch(authProvider); // Rebuild on auth change
+    return ChatSessionsNotifier(ref);
+  },
 );
 
 class ChatSessionsNotifier extends StateNotifier<List<ChatSession>> {
@@ -22,16 +26,26 @@ class ChatSessionsNotifier extends StateNotifier<List<ChatSession>> {
   }
 
   void _loadSessions() {
+    final user = _ref.read(authProvider).user;
+    if (user == null) {
+      state = [];
+      return;
+    }
+
     final box = HiveService.chatSessionBox;
-    final sessions = box.values.toList();
+    final sessions = box.values.where((s) => s.userId == user.id).toList();
     // Sort descending by updated at
     sessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     state = sessions;
   }
 
   Future<ChatSession> createSession(String initialText) async {
+    final user = _ref.read(authProvider).user;
+    if (user == null) throw Exception('User not authenticated');
+
     final newSession = ChatSession(
       id: _uuid.v4(),
+      userId: user.id,
       title: 'New Conversation',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),

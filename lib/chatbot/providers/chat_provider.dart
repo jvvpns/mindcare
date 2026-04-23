@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../auth/providers/auth_provider.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:uuid/uuid.dart';
 import '../models/chat_message.dart';
@@ -31,7 +32,10 @@ final chatLoadingProvider = StateProvider<bool>((ref) => false);
 /// Central provider for managing the entire conversation list.
 final chatMessagesProvider =
     StateNotifierProvider<ChatMessagesNotifier, List<ChatMessage>>(
-  (ref) => ChatMessagesNotifier(ref),
+  (ref) {
+    ref.watch(authProvider); // Rebuild on auth change
+    return ChatMessagesNotifier(ref);
+  },
 );
 
 class ChatMessagesNotifier extends StateNotifier<List<ChatMessage>> {
@@ -81,9 +85,15 @@ class ChatMessagesNotifier extends StateNotifier<List<ChatMessage>> {
       // On launch/session switch, we rehydrate from local first for speed
       final localSnapshot = localContext.buildLocalSnapshot();
       
+      final user = _ref.read(authProvider).user;
+      if (user == null) {
+        state = [_buildGreeting()];
+        return;
+      }
+
       // Load UI messages from local Hive
       final allMessages = HiveService.chatBox.values
-          .where((m) => m.sessionId == sessionId)
+          .where((m) => m.sessionId == sessionId && m.userId == user.id)
           .toList();
       allMessages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
       
@@ -177,8 +187,12 @@ class ChatMessagesNotifier extends StateNotifier<List<ChatMessage>> {
     );
     state = [...state, userMsg];
 
+    final user = _ref.read(authProvider).user;
+    if (user == null) return;
+
     // 2. Persist Locally
     await LocalContextService.instance.persistMessage(
+      userId: user.id,
       content: text,
       role: 'user',
       sessionId: currentSessionId,
@@ -246,6 +260,7 @@ class ChatMessagesNotifier extends StateNotifier<List<ChatMessage>> {
 
       // 4. Success Path
       await LocalContextService.instance.persistMessage(
+        userId: user.id,
         content: reply,
         role: 'assistant',
         sessionId: startedSessionId,

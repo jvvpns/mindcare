@@ -133,10 +133,12 @@ class ChatTutorialOverlay extends ConsumerWidget {
             children: [
               PhosphorIcon(PhosphorIconsRegular.lockKey, size: 16, color: AppColors.textTertiary),
               SizedBox(width: 8),
-              Text(
-                "You don't need perfect words—just be yourself.\nChats are 100% private and stored locally.",
-                style: AppTextStyles.caption,
-                textAlign: TextAlign.center,
+              Expanded(
+                child: Text(
+                  "You don't need perfect words—just be yourself.\nChats are securely synced and private to your account.",
+                  style: AppTextStyles.caption,
+                  textAlign: TextAlign.center,
+                ),
               ),
             ],
           ),

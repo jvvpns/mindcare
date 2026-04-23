@@ -22,13 +22,14 @@ class RefuelLogAdapter extends TypeAdapter<RefuelLog> {
       hasBreakfast: fields[1] as bool,
       hasLunch: fields[2] as bool,
       hasDinner: fields[3] as bool,
+      userId: fields[5] == null ? 'local' : fields[5] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, RefuelLog obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.date)
       ..writeByte(1)
@@ -38,7 +39,9 @@ class RefuelLogAdapter extends TypeAdapter<RefuelLog> {
       ..writeByte(3)
       ..write(obj.hasDinner)
       ..writeByte(4)
-      ..write(obj.id);
+      ..write(obj.id)
+      ..writeByte(5)
+      ..write(obj.userId);
   }
 
   @override

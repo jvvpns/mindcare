@@ -26,8 +26,12 @@ cat <<EOF > web/version.json
 EOF
 echo "✅ Set version.json to v$VERSION"
 
-# Build with dart-define to inject the backend URL
-flutter build web --release --dart-define=BACKEND_URL="$BACKEND_URL"
+# Build with dart-define to inject all necessary environment variables
+flutter build web --release \
+  --dart-define=BACKEND_URL="$BACKEND_URL" \
+  --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+  --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+  --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY"
 
 # Check if build succeeded
 if [ $? -eq 0 ]; then

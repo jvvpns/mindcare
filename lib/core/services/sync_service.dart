@@ -13,6 +13,8 @@ import 'package:hilway/core/models/journal_entry.dart';
 import 'package:hilway/clinical_duty/models/shift_task.dart';
 import 'package:hilway/core/models/refuel_log.dart';
 import 'package:hilway/core/models/assessment_result.dart';
+import 'package:hilway/core/models/chat_session.dart';
+import 'package:hilway/core/models/chat_message.dart';
 import 'package:hilway/core/services/hive_service.dart';
 
 /// Senior-grade SyncService with State Machine and Exponential Backoff.
@@ -34,13 +36,17 @@ class SyncService {
   /// Resets any jobs stuck in 'syncing' state back to 'pending'.
   /// This handles scenarios where the app was closed mid-sync.
   Future<void> _recoverInterruptedJobs() async {
-    final interrupted = _queueBox.values.where((job) => job.state == SyncState.syncing).toList();
+    final interrupted = _queueBox.values
+        .where((job) => job.state == SyncState.syncing)
+        .toList();
     for (final job in interrupted) {
       job.state = SyncState.pending;
       await job.save();
     }
     if (interrupted.isNotEmpty) {
-      debugPrint('SyncService: Recovered ${interrupted.length} interrupted jobs.');
+      debugPrint(
+        'SyncService: Recovered ${interrupted.length} interrupted jobs.',
+      );
     }
   }
 
@@ -54,10 +60,14 @@ class SyncService {
     if (userId == null) return;
 
     data['user_id'] = userId;
-    
+
     // Use the model's timestamp as an idempotency/version key
     // Most models use 'logged_at', 'created_at', or 'taken_at'
-    final timestamp = data['logged_at'] ?? data['created_at'] ?? data['taken_at'] ?? DateTime.now().toIso8601String();
+    final timestamp =
+        data['logged_at'] ??
+        data['created_at'] ??
+        data['taken_at'] ??
+        DateTime.now().toIso8601String();
 
     final job = SyncJob(
       id: '${table}_$id',
@@ -74,10 +84,7 @@ class SyncService {
   }
 
   /// Queues a delete action.
-  Future<void> queueDelete({
-    required String table,
-    required String id,
-  }) async {
+  Future<void> queueDelete({required String table, required String id}) async {
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
 
@@ -97,7 +104,7 @@ class SyncService {
   /// Processes the queue with a state machine and batching optimization.
   Future<void> processQueue() async {
     if (_isProcessing || _queueBox.isEmpty) return;
-    
+
     final userId = SupabaseService.currentUser?.id;
     if (userId == null) return;
 
@@ -106,7 +113,10 @@ class SyncService {
 
     try {
       final jobs = _queueBox.values
-          .where((j) => j.state == SyncState.pending || j.state == SyncState.retrying)
+          .where(
+            (j) =>
+                j.state == SyncState.pending || j.state == SyncState.retrying,
+          )
           .toList();
 
       if (jobs.isEmpty) return;
@@ -138,10 +148,9 @@ class SyncService {
       for (final job in individualJobs) {
         await _syncJob(job);
       }
-      
     } finally {
       _isProcessing = false;
-      
+
       if (_queueBox.isNotEmpty) {
         _retryTimer = Timer(const Duration(seconds: 30), processQueue);
       }
@@ -171,8 +180,9 @@ class SyncService {
       for (final job in jobs) {
         await _queueBox.delete(job.id);
       }
-      debugPrint('SyncService: Successfully batched ${jobs.length} items to $table');
-
+      debugPrint(
+        'SyncService: Successfully batched ${jobs.length} items to $table',
+      );
     } catch (e) {
       // Failure: Revert to retrying state individually
       for (final job in jobs) {
@@ -190,11 +200,13 @@ class SyncService {
 
   bool _shouldRetry(SyncJob job) {
     if (job.lastAttempt == null) return true;
-    
+
     // Exponential backoff: 2^retryCount * 2 seconds
-    final delay = pow(2, job.retryCount) * 2000; 
-    final nextAllowed = job.lastAttempt!.add(Duration(milliseconds: delay.toInt()));
-    
+    final delay = pow(2, job.retryCount) * 2000;
+    final nextAllowed = job.lastAttempt!.add(
+      Duration(milliseconds: delay.toInt()),
+    );
+
     return DateTime.now().isAfter(nextAllowed);
   }
 
@@ -207,16 +219,19 @@ class SyncService {
 
     try {
       if (job.action == 'delete') {
+        final userId = SupabaseService.currentUserId;
+        if (userId == null) return;
+
         await SupabaseService.client
             .from(job.table)
             .delete()
             .eq('id', job.payload['id'])
+            .eq('user_id', userId)
             .timeout(const Duration(seconds: 15));
       }
 
       await _queueBox.delete(job.id);
       debugPrint('SyncService: Successfully synced individual job ${job.id}');
-      
     } catch (e) {
       if (e is PostgrestException && (e.code?.startsWith('22') ?? false)) {
         job.state = SyncState.failed;
@@ -234,59 +249,108 @@ class SyncService {
     if (userId == null) return;
 
     try {
-      debugPrint('SyncService: Starting global data pull...');
-      
+      debugPrint(
+        'SyncService: Starting global data pull and local box clearing...',
+      );
+
+      // IMPORTANT: Clear all local storage before populating to prevent cross-user data leakage
+      await HiveService.clearAllData();
+
       // 1. Pull & Save Mood Logs
-      final moods = await SupabaseService.client.from('mood_logs').select().eq('user_id', userId);
+      final moods = await SupabaseService.client
+          .from(AppConstants.tableMoodLogs)
+          .select()
+          .eq('user_id', userId);
       for (var json in moods) {
         final log = MoodLog.fromMap(json);
         await HiveService.moodBox.put(log.id, log);
       }
-      
+
       // 2. Pull & Save Stress Ratings
-      final stress = await SupabaseService.client.from('stress_ratings').select().eq('user_id', userId);
+      final stress = await SupabaseService.client
+          .from(AppConstants.tableStressRatings)
+          .select()
+          .eq('user_id', userId);
       for (var json in stress) {
         final log = StressRating.fromMap(json);
         await HiveService.stressBox.put(log.id, log);
       }
 
       // 3. Pull & Save Planner Entries
-      final planner = await SupabaseService.client.from('planner_entries').select().eq('user_id', userId);
+      final planner = await SupabaseService.client
+          .from(AppConstants.tablePlannerEntries)
+          .select()
+          .eq('user_id', userId);
       for (var json in planner) {
         final entry = PlannerEntry.fromMap(json);
         await HiveService.plannerBox.put(entry.id, entry);
       }
 
       // 4. Pull & Save Journal Entries
-      final journals = await SupabaseService.client.from('journal_entries').select().eq('user_id', userId);
+      final journals = await SupabaseService.client
+          .from(AppConstants.tableJournalEntries)
+          .select()
+          .eq('user_id', userId);
       for (var json in journals) {
         final entry = JournalEntry.fromMap(json);
         await HiveService.journalBox.put(entry.id, entry);
       }
-      
+
       // 5. Pull & Save Shift Tasks (Clinical Duties)
-      final shifts = await SupabaseService.client.from('shift_tasks').select().eq('user_id', userId);
+      final shifts = await SupabaseService.client
+          .from(AppConstants.tableShiftTasks)
+          .select()
+          .eq('user_id', userId);
       for (var json in shifts) {
         final task = ShiftTask.fromMap(json);
         await HiveService.shiftBox.put(task.id, task);
       }
 
       // 6. Pull & Save Refuel Logs (Meal MAR)
-      final refuels = await SupabaseService.client.from('refuel_logs').select().eq('user_id', userId);
+      final refuels = await SupabaseService.client
+          .from(AppConstants.tableRefuelLogs)
+          .select()
+          .eq('user_id', userId);
       for (var json in refuels) {
         final log = RefuelLog.fromMap(json);
-        final key = '${log.date.year}-${log.date.month}-${log.date.day}';
+        final key =
+            '${log.userId}_${log.date.year}-${log.date.month}-${log.date.day}';
         await HiveService.refuelBox.put(key, log);
       }
 
       // 7. Pull & Save Assessment Results (AI Resilience, PSS-10, etc.)
-      final assessments = await SupabaseService.client.from('assessment_results').select().eq('user_id', userId);
+      final assessments = await SupabaseService.client
+          .from(AppConstants.tableAssessments)
+          .select()
+          .eq('user_id', userId);
       for (var json in assessments) {
         final result = AssessmentResult.fromMap(json);
         await HiveService.assessmentBox.put(result.id, result);
       }
       
-      debugPrint('SyncService: Successfully pulled ${moods.length} moods, ${planner.length} tasks, ${shifts.length} shift duties, ${refuels.length} meal logs, and ${assessments.length} assessments.');
+      // 8. Pull & Save Chat Sessions
+      final sessions = await SupabaseService.client
+          .from(AppConstants.tableChatSessions)
+          .select()
+          .eq('user_id', userId);
+      for (var json in sessions) {
+        final session = ChatSession.fromMap(json);
+        await HiveService.chatSessionBox.put(session.id, session);
+      }
+      
+      // 9. Pull & Save Chat Messages
+      final messages = await SupabaseService.client
+          .from(AppConstants.tableChatMessages)
+          .select()
+          .eq('user_id', userId);
+      for (var json in messages) {
+        final message = ChatMessage.fromMap(json);
+        await HiveService.chatBox.put(message.id, message);
+      }
+
+      debugPrint(
+        'SyncService: Successfully pulled ${moods.length} moods, ${planner.length} tasks, ${shifts.length} shift duties, ${refuels.length} meal logs, ${assessments.length} assessments, and ${messages.length} chat messages.',
+      );
     } catch (e) {
       debugPrint('SyncService: Global pull failed: $e');
     }

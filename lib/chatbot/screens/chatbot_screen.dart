@@ -94,9 +94,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("🔒 Your conversations are stored locally.", style: AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+            Text("🔒 Your conversations are securely synced.", style: AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text("Everything you discuss with Kelly stays entirely on this device. HILWAY does not send your chat logs to any external database or server.", style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, height: 1.4)),
+            Text("Your discussions with Kelly are encrypted and securely synced to your account. This ensures you can access your chat history from any device while maintaining absolute privacy from other users on this shared device.", style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, height: 1.4)),
             const SizedBox(height: 12),
             Text("You are safe to express your feelings openly and without judgment.", style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, height: 1.4)),
           ],

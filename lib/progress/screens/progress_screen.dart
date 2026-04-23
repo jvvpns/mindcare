@@ -13,6 +13,7 @@ import '../../shared/widgets/hilway_card.dart';
 import '../../shared/widgets/responsive_wrapper.dart';
 import '../../mood_tracking/providers/mood_provider.dart';
 import '../../journal/providers/journal_provider.dart';
+import '../../chatbot/widgets/kelly_orb_mascot.dart';
 import '../../chatbot/providers/kelly_state_provider.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
@@ -53,23 +54,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         emotion: effectiveEmotion,
         child: Stack(
           children: [
-            // ── Premium Glass Header ─────────────────────────────────────────
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: HilwayGlass(
-                sigmaX: 12,
-                sigmaY: 12,
-                child: Container(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, bottom: 20),
-                    child: const Center(
-                      child: Text('Mood Journey', style: AppTextStyles.headingSmall),
-                    ),
-                  ),
-                ),
-            ),
+
 
             ResponsiveWrapper(
               child: SafeArea(
@@ -88,8 +73,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           physics: const BouncingScrollPhysics(),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: List.generate(7, (index) {
-                              final day = now.subtract(Duration(days: 6 - index));
+                            children: List.generate(14, (index) {
+                              final day = now.subtract(Duration(days: 13 - index));
                               final isSelected = _isSameDay(day, _selectedDate);
                               final hasLog = moodLogs.any((l) => _isSameDay(l.loggedAt, day));
   
@@ -140,10 +125,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                         if (hasLog)
                                           Padding(
                                             padding: const EdgeInsets.only(top: 6.0),
-                                            child: Image.asset(
-                                              AppConstants.moodAnimatedAssets[moodLogs.firstWhere((l) => _isSameDay(l.loggedAt, day)).moodIndex],
-                                              width: 18,
-                                              height: 18,
+                                            child: RepaintBoundary(
+                                              child: Image.asset(
+                                                AppConstants.moodAnimatedAssets[moodLogs.firstWhere((l) => _isSameDay(l.loggedAt, day)).moodIndex],
+                                                width: 18,
+                                                height: 18,
+                                              ),
                                             ),
                                           )
                                         else
@@ -286,15 +273,131 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           ),
                         )),
   
+                      const SizedBox(height: 32),
+                      
+                      // ── Mood Legend Section ─────────────────────────────────────
+                      const Text("MOOD COLOR KEY", style: AppTextStyles.labelSmall),
+                      const SizedBox(height: 12),
+                      HilwayCard(
+                        isGlass: true,
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          children: [
+                            _buildLegendItem(AppConstants.kellyHappy, 'Radiant', 'Joyful, energetic, and positive energy'),
+                            const Divider(height: 24, color: AppColors.borderLight, thickness: 0.5),
+                            _buildLegendItem(AppConstants.kellyCalm, 'Serene', 'Peaceful, balanced, and mindful state'),
+                            const Divider(height: 24, color: AppColors.borderLight, thickness: 0.5),
+                            _buildLegendItem(AppConstants.kellyDefault, 'Steady', 'Quiet reflection and emotional stability'),
+                            const Divider(height: 24, color: AppColors.borderLight, thickness: 0.5),
+                            _buildLegendItem(AppConstants.kellySad, 'Vulnerable', 'Sadness, low energy, or needing care'),
+                            const Divider(height: 24, color: AppColors.borderLight, thickness: 0.5),
+                            _buildLegendItem(AppConstants.kellyConcerned, 'Heavy', 'Anxiety, stress, or feeling overwhelmed'),
+                          ],
+                        ),
+                      ),
+
                       const SizedBox(height: 100), // Space for bottom nav
                     ],
                   ),
                 ),
               ),
             ),
+            _buildHeader(context),
           ],
+        ),
+      ),
+      // ── Premium Glass Header (Placed last to stay on top of scrollview) ──
+      bottomNavigationBar: null, // Ensure no collision with nav if present
+      extendBody: true,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: HilwayGlass(
+        sigmaX: 12,
+        sigmaY: 12,
+        child: Container(
+          color: Colors.white.withValues(alpha: 0.1),
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + 12,
+            bottom: 16,
+            left: 24,
+            right: 8,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Left spacer to keep title centered
+              const SizedBox(width: 40),
+              
+              const Expanded(
+                child: Text(
+                  'Mood Journey',
+                  style: AppTextStyles.headingSmall,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+              IconButton(
+                icon: const PhosphorIcon(
+                  PhosphorIconsRegular.calendarBlank,
+                  color: AppColors.textPrimary,
+                  size: 24,
+                ),
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _selectedDate,
+                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                    lastDate: DateTime.now(),
+                    builder: (context, child) {
+                      return Theme(
+                        data: Theme.of(context).copyWith(
+                          colorScheme: const ColorScheme.light(
+                            primary: AppColors.primary,
+                            onPrimary: Colors.white,
+                            onSurface: AppColors.textPrimary,
+                          ),
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+                  if (picked != null) {
+                    setState(() => _selectedDate = picked);
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildLegendItem(String emotion, String title, String description) {
+    return Row(
+      children: [
+        RepaintBoundary(child: KellyMiniOrb(emotion: emotion, size: 24)),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 2),
+              Text(description, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
+
+// _MoodOrb class removed in favor of KellyMiniOrb

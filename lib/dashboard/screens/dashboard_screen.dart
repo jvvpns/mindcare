@@ -65,44 +65,47 @@ class DashboardScreen extends ConsumerWidget {
         emotion: effectiveEmotion,
         child: SafeArea(
           child: ResponsiveWrapper(
-            child: RepaintBoundary(
-              child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        DashboardHeader(
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      // Header is isolated so its breathing mascot doesn't disturb scrolling
+                      RepaintBoundary(
+                        child: DashboardHeader(
                           userName: userName,
                           quote: dailyQuote,
                           effectiveEmotion: effectiveEmotion,
                           burnoutLevel: burnoutLevel,
                         ),
-                        const SizedBox(height: 24),
-                        
-                        RepaintBoundary(child: _buildVitalsBento(context, ref)),
-                        const SizedBox(height: 24),
-    
-                        if (burnoutLevel == BurnoutLevel.high) _buildBurnoutAlert(context),
-                        if (burnoutLevel == BurnoutLevel.high) const SizedBox(height: 16),
-    
-                        const MoodCheckerRow(),
-                        const SizedBox(height: 24),
-    
-                        const RepaintBoundary(child: RefuelChart()),
-                        const SizedBox(height: 24),
-    
-                        const HeroJournalCard(),
-                        const SizedBox(height: 24),
-    
-                        RepaintBoundary(child: _buildToolGrid(context, ref)),
-                        const SizedBox(height: 48),
-                      ]),
-                    ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Bento contains the Gauge with its own internal RepaintBoundary
+                      _buildVitalsBento(context, ref),
+                      const SizedBox(height: 24),
+  
+                      if (burnoutLevel == BurnoutLevel.high) _buildBurnoutAlert(context),
+                      if (burnoutLevel == BurnoutLevel.high) const SizedBox(height: 16),
+  
+                      const MoodCheckerRow(),
+                      const SizedBox(height: 24),
+  
+                      // Chart is isolated for smooth scrolling
+                      const RepaintBoundary(child: RefuelChart()),
+                      const SizedBox(height: 24),
+  
+                      const HeroJournalCard(),
+                      const SizedBox(height: 24),
+  
+                      _buildToolGrid(context, ref),
+                      const SizedBox(height: 80), // Extra space for bottom nav
+                    ]),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

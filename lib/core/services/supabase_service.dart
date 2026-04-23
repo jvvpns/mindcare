@@ -90,7 +90,9 @@ class SupabaseService {
     required String table,
     required String id,
   }) async {
-    await client.from(table).delete().eq('id', id);
+    final userId = currentUserId;
+    if (userId == null) return;
+    await client.from(table).delete().eq('id', id).eq('user_id', userId);
   }
 
   Future<void> deleteAllUserData() async {
@@ -102,6 +104,9 @@ class SupabaseService {
       AppConstants.tableStressRatings,
       AppConstants.tableAssessments,
       AppConstants.tablePlannerEntries,
+      AppConstants.tableJournalEntries,
+      AppConstants.tableShiftTasks,
+      AppConstants.tableRefuelLogs,
       AppConstants.tableSettings,
     ];
 

@@ -206,45 +206,7 @@ class ProfileScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 32),
-  
-                      const Text('Account', style: AppTextStyles.labelLarge),
-                      const SizedBox(height: 16),
-  
-                      // Log Out Button
-                      ElevatedButton.icon(
-                        onPressed: authState.isLoading ? null : () async {
-                          final success = await ref.read(authProvider.notifier).signOut();
-                          if (success && context.mounted) {
-                            context.go('/login');
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.surface,
-                          foregroundColor: AppColors.error,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: AppColors.error.withValues(alpha: 0.2)),
-                          ),
-                        ),
-                        icon: authState.isLoading 
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                            : const PhosphorIcon(PhosphorIconsRegular.signOut, size: 20),
-                        label: Text(
-                          authState.isLoading ? 'Signing Out...' : 'Sign Out',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 24),
-                      Center(
-                        child: Text(
-                          'HILWAY Wellness Suite v1.0',
-                          style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
-                        ),
-                      ),
+                      const SizedBox(height: 80), // Extra space at bottom
                     ],
                   ),
                 ),

@@ -114,8 +114,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Your data is encrypted and stored privately on your device. '
-                          'Developers have no access to your conversations.',
+                          'Your data is encrypted and securely synced to your account. '
+                          'Your personal health data and conversations remain entirely '
+                          'private and accessible only by you.',
                           style: AppTextStyles.bodySmall.copyWith(
                             color: AppColors.textSecondary,
                             height: 1.6,

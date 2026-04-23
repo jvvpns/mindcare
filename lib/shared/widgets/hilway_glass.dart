@@ -52,6 +52,7 @@ class HilwayGlass extends StatelessWidget {
       );
     }
 
-    return blurredChild;
+    // Ensure we always clip to the widget's bounds to prevent blur bleed
+    return ClipRect(child: blurredChild);
   }
 }

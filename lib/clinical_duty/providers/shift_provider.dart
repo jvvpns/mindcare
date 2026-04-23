@@ -1,31 +1,46 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/shift_task.dart';
 import '../../core/services/hive_service.dart';
 import '../../core/services/sync_service.dart';
+import '../../auth/providers/auth_provider.dart';
 
-final shiftProvider = StateNotifierProvider<ShiftNotifier, List<ShiftTask>>((ref) {
-  return ShiftNotifier();
+final shiftProvider = StateNotifierProvider<ShiftNotifier, List<ShiftTask>>((
+  ref,
+) {
+  ref.watch(authProvider); // Rebuild on auth change
+  return ShiftNotifier(ref);
 });
 
 class ShiftNotifier extends StateNotifier<List<ShiftTask>> {
-  ShiftNotifier() : super([]) {
+  final Ref _ref;
+  StreamSubscription? _subscription;
+
+  ShiftNotifier(this._ref) : super([]) {
     _init();
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _init() async {
     await _checkMidnightReset();
     _loadTasks();
     // Watch for external changes
-    HiveService.shiftBox.watch().listen((_) => _loadTasks());
+    _subscription = HiveService.shiftBox.watch().listen((_) => _loadTasks());
   }
 
   Future<void> _checkMidnightReset() async {
     const resetKey = 'last_shift_reset_date';
     final now = DateTime.now();
     final todayStr = "${now.year}-${now.month}-${now.day}";
-    
-    final lastReset = HiveService.settingsBox.get(resetKey, defaultValue: '') as String;
-    
+
+    final lastReset =
+        HiveService.settingsBox.get(resetKey, defaultValue: '') as String;
+
     if (lastReset != todayStr) {
       // It's a new day! Reset all tasks
       final box = HiveService.shiftBox;
@@ -40,9 +55,16 @@ class ShiftNotifier extends StateNotifier<List<ShiftTask>> {
   }
 
   void _loadTasks() {
+    if (!mounted) return;
+    final user = _ref.read(authProvider).user;
+    if (user == null) {
+      state = [];
+      return;
+    }
+
     final box = HiveService.shiftBox;
-    final tasks = box.values.toList();
-    
+    final tasks = box.values.where((t) => t.userId == user.id).toList();
+
     if (tasks.isEmpty) {
       // Default tasks if none exist
       final defaultTasks = [
@@ -53,7 +75,7 @@ class ShiftNotifier extends StateNotifier<List<ShiftTask>> {
         ShiftTask(title: 'Update Patient Charts', category: 'Documentation'),
         ShiftTask(title: 'Prepare for Endorsement', category: 'Handover'),
       ];
-      
+
       for (var task in defaultTasks) {
         box.put(task.id, task);
       }
@@ -64,12 +86,19 @@ class ShiftNotifier extends StateNotifier<List<ShiftTask>> {
   }
 
   Future<void> addTask(String title, String category) async {
-    final task = ShiftTask(title: title, category: category);
+    final user = _ref.read(authProvider).user;
+    if (user == null) return;
+
+    final task = ShiftTask(title: title, category: category, userId: user.id);
     await HiveService.shiftBox.put(task.id, task);
     state = [...state, task];
-    
+
     // Sync to cloud
-    SyncService.instance.queueUpsert(table: 'shift_tasks', id: task.id, data: task.toMap());
+    SyncService.instance.queueUpsert(
+      table: 'shift_tasks',
+      id: task.id,
+      data: task.toMap(),
+    );
   }
 
   Future<void> toggleDone(String id) async {
@@ -80,18 +109,22 @@ class ShiftNotifier extends StateNotifier<List<ShiftTask>> {
       await task.save();
       state = [
         for (final t in state)
-          if (t.id == id) t.copyWith(isDone: task.isDone) else t
+          if (t.id == id) t.copyWith(isDone: task.isDone) else t,
       ];
-      
+
       // Sync to cloud
-      SyncService.instance.queueUpsert(table: 'shift_tasks', id: task.id, data: task.toMap());
+      SyncService.instance.queueUpsert(
+        table: 'shift_tasks',
+        id: task.id,
+        data: task.toMap(),
+      );
     }
   }
 
   Future<void> deleteTask(String id) async {
     await HiveService.shiftBox.delete(id);
     state = state.where((t) => t.id != id).toList();
-    
+
     // Sync deletion to cloud
     SyncService.instance.queueDelete(table: 'shift_tasks', id: id);
   }
@@ -102,8 +135,6 @@ class ShiftNotifier extends StateNotifier<List<ShiftTask>> {
       task.isDone = false;
       await task.save();
     }
-    state = [
-      for (final t in state) t.copyWith(isDone: false)
-    ];
+    state = [for (final t in state) t.copyWith(isDone: false)];
   }
 }

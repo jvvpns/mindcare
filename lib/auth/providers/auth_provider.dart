@@ -1,3 +1,4 @@
+import 'dart:js' as js;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -12,11 +13,7 @@ class AuthState {
   final bool isLoading;
   final String? errorMessage;
 
-  const AuthState({
-    this.user,
-    this.isLoading = false,
-    this.errorMessage,
-  });
+  const AuthState({this.user, this.isLoading = false, this.errorMessage});
 
   bool get isAuthenticated => user != null;
 
@@ -26,12 +23,11 @@ class AuthState {
     String? errorMessage,
     bool clearUser = false,
     bool clearError = false,
-  }) =>
-      AuthState(
-        user: clearUser ? null : user ?? this.user,
-        isLoading: isLoading ?? this.isLoading,
-        errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-      );
+  }) => AuthState(
+    user: clearUser ? null : user ?? this.user,
+    isLoading: isLoading ?? this.isLoading,
+    errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+  );
 }
 
 // ── Auth Notifier ─────────────────────────────────────────────────────────
@@ -48,7 +44,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // If user is already logged in (e.g., returning to PWA), trigger a background sync
     // to ensure data from other devices (like localhost) is pulled down.
     if (currentUser != null) {
-      debugPrint('AuthNotifier: User already logged in. Triggering background pullAllData...');
+      debugPrint(
+        'AuthNotifier: User already logged in. Triggering background pullAllData...',
+      );
       SyncService.instance.pullAllData().catchError((e) {
         debugPrint('AuthNotifier: Background sync error: $e');
       });
@@ -60,12 +58,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final session = data.session;
 
       // Only clear error and update state if it's a meaningful change
-      if (event == AuthChangeEvent.signedIn || event == AuthChangeEvent.signedOut) {
+      if (event == AuthChangeEvent.signedIn ||
+          event == AuthChangeEvent.signedOut) {
         state = state.copyWith(
           user: session?.user,
           clearUser: session == null,
           isLoading: false,
-          clearError: event == AuthChangeEvent.signedIn, // Clear error on success
+          clearError:
+              event == AuthChangeEvent.signedIn, // Clear error on success
         );
       } else {
         // Just update user for refresh
@@ -92,8 +92,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       debugPrint('AuthNotifier: Starting signUp for $email...');
       debugPrint('AuthNotifier: URL: ${AppConstants.supabaseUrl}');
-      debugPrint('AuthNotifier: KEY: ${AppConstants.supabaseAnonKey.substring(0, 15)}...');
-      
+      debugPrint(
+        'AuthNotifier: KEY: ${AppConstants.supabaseAnonKey.substring(0, 15)}...',
+      );
+
       final response = await SupabaseService.instance.signUp(
         email: email,
         password: password,
@@ -105,14 +107,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
           'school': school,
         },
       );
-      
-      debugPrint('AuthNotifier: Supabase signUp response received. User: ${response.user?.id}');
+
+      debugPrint(
+        'AuthNotifier: Supabase signUp response received. User: ${response.user?.id}',
+      );
 
       if (response.user != null) {
-        state = state.copyWith(
-          user: response.user,
-          isLoading: false,
-        );
+        state = state.copyWith(user: response.user, isLoading: false);
         debugPrint('AuthNotifier: SignUp successful, state updated.');
         return true;
       }
@@ -145,22 +146,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   // ── Sign In ───────────────────────────────────────────────────────────
-  Future<bool> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> signIn({required String email, required String password}) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       debugPrint('AuthNotifier: Starting signIn for $email...');
       debugPrint('AuthNotifier: URL: ${AppConstants.supabaseUrl}');
-      debugPrint('AuthNotifier: KEY: ${AppConstants.supabaseAnonKey.substring(0, 15)}...');
-      
+      debugPrint(
+        'AuthNotifier: KEY: ${AppConstants.supabaseAnonKey.substring(0, 15)}...',
+      );
+
       final response = await SupabaseService.instance.signIn(
         email: email,
         password: password,
       );
-      
-      debugPrint('AuthNotifier: Supabase signIn response received. User: ${response.user?.id}');
+
+      debugPrint(
+        'AuthNotifier: Supabase signIn response received. User: ${response.user?.id}',
+      );
 
       if (response.user != null) {
         // Pull all offline data from cloud into Hive with a timeout to prevent hanging
@@ -168,16 +170,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
         try {
           await SyncService.instance.pullAllData().timeout(
             const Duration(seconds: 10),
-            onTimeout: () => debugPrint('AuthNotifier: Sync pullAllData timed out, continuing...'),
+            onTimeout: () => debugPrint(
+              'AuthNotifier: Sync pullAllData timed out, continuing...',
+            ),
           );
         } catch (e) {
           debugPrint('AuthNotifier: Sync pullAllData error: $e');
         }
 
-        state = state.copyWith(
-          user: response.user,
-          isLoading: false,
-        );
+        state = state.copyWith(user: response.user, isLoading: false);
         debugPrint('AuthNotifier: SignIn successful, state updated.');
         return true;
       }
@@ -190,10 +191,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } on AuthException catch (e) {
       final friendlyError = _friendlyAuthError(e.message);
       debugPrint('AuthNotifier: AuthException during signIn: $friendlyError');
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: friendlyError,
-      );
+      state = state.copyWith(isLoading: false, errorMessage: friendlyError);
       return false;
     } catch (e) {
       debugPrint('AuthNotifier: Unexpected error during signIn: $e');
@@ -214,15 +212,38 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> signOut() async {
     state = state.copyWith(isLoading: true);
     try {
+      debugPrint('AuthNotifier: Starting sign out cleanup...');
+
+      // 1. Tell Supabase to end the session
       await SupabaseService.instance.signOut();
-      // Securely wipe ALL local user data from Hive on sign out
+
+      // 2. Securely wipe ALL local user data from Hive
       await HiveService.clearAllData();
+
       state = const AuthState();
+
+      // 3. PWA/Web Hard Refresh
+      // This is crucial to ensure all Riverpod providers are fully destroyed
+      // and the app starts from a "clean slate" for the next account.
+      if (kIsWeb) {
+        // Subtle delay to allow the state to propagate before the reload
+        await Future.delayed(const Duration(milliseconds: 200));
+        js.context.callMethod('eval', ['window.location.reload()']);
+      }
       return true;
     } catch (e) {
+      debugPrint('AuthNotifier: Sign out encountered an error: $e');
+
+      // If the session is already null, we consider it a successful sign out
+      // regardless of minor cleanup errors, to prevent confusing the user.
+      if (SupabaseService.currentUser == null) {
+        state = const AuthState();
+        return true;
+      }
+
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Sign out failed. Please try again.',
+        errorMessage: 'Sign out failed. Please check your connection.',
       );
       return false;
     }
@@ -233,9 +254,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true);
     // Artificial delay to mimic network
     await Future.delayed(const Duration(milliseconds: 500));
-    
-    // We create a dummy User object. 
-    // Since we can't easily instantiate a real Supabase User object manually, 
+
+    // We create a dummy User object.
+    // Since we can't easily instantiate a real Supabase User object manually,
     // we'll just set a mock state.
     state = AuthState(
       user: User(
@@ -269,7 +290,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (lower.contains('network') || lower.contains('connection')) {
       return 'No internet connection. Please check your network.';
     }
-    if (lower.contains('apikey') || lower.contains('api key') || lower.contains('unauthorized')) {
+    if (lower.contains('apikey') ||
+        lower.contains('api key') ||
+        lower.contains('unauthorized')) {
       return 'Supabase configuration error. Please check your Anon Key in .env';
     }
     return message;

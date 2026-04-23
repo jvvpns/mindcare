@@ -24,6 +24,9 @@ class ChatMessage extends HiveObject {
   @HiveField(5)
   final String? sessionId;
 
+  @HiveField(6, defaultValue: 'local')
+  final String userId;
+
   ChatMessage({
     required this.id,
     required this.content,
@@ -31,6 +34,7 @@ class ChatMessage extends HiveObject {
     required this.sentAt,
     this.isCrisisDetected = false,
     this.sessionId,
+    this.userId = 'local',
   });
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -43,6 +47,7 @@ class ChatMessage extends HiveObject {
   // ── Serialization ─────────────────────────────────────────────────────────
   factory ChatMessage.fromMap(Map<String, dynamic> map) => ChatMessage(
     id:               map['id'] as String,
+    userId:           map['user_id'] as String? ?? 'local',
     content:          map['content'] as String,
     role:             map['role'] as String,
     sentAt:           DateTime.parse(map['sent_at'] as String),
@@ -52,6 +57,7 @@ class ChatMessage extends HiveObject {
 
   Map<String, dynamic> toMap() => {
     'id':                 id,
+    'user_id':            userId,
     'content':            content,
     'role':               role,
     'sent_at':            sentAt.toIso8601String(),
@@ -74,6 +80,7 @@ class ChatMessage extends HiveObject {
     DateTime? sentAt,
     bool? isCrisisDetected,
     String? sessionId,
+    String? userId,
   }) =>
       ChatMessage(
         id:               id ?? this.id,
@@ -82,6 +89,7 @@ class ChatMessage extends HiveObject {
         sentAt:           sentAt ?? this.sentAt,
         isCrisisDetected: isCrisisDetected ?? this.isCrisisDetected,
         sessionId:        sessionId ?? this.sessionId,
+        userId:           userId ?? this.userId,
       );
 
   @override

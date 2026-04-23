@@ -72,17 +72,19 @@ class _WellnessGaugeState extends State<WellnessGauge>
         SizedBox(
           height: 90,
           width: 160,
-          child: AnimatedBuilder(
-            animation: _scoreAnimation,
-            builder: (context, child) {
-              return CustomPaint(
-                painter: _GaugePainter(
-                  score: _scoreAnimation.value,
-                  level: widget.level,
-                  isLocked: widget.isLocked,
-                ),
-              );
-            },
+          child: RepaintBoundary(
+            child: AnimatedBuilder(
+              animation: _scoreAnimation,
+              builder: (context, child) {
+                return CustomPaint(
+                  painter: _GaugePainter(
+                    score: _scoreAnimation.value,
+                    level: widget.level,
+                    isLocked: widget.isLocked,
+                  ),
+                );
+              },
+            ),
           ),
         ),
         const SizedBox(height: 8),

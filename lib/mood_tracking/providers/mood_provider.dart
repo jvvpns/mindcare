@@ -49,24 +49,25 @@ class MoodNotifier extends StateNotifier<MoodLog?> {
     // Check if there is a mood log for the current active slot
     final now = DateTime.now();
     final slot = getCurrentMoodSlot();
-    
+
     // Fallback: If outside preferred slots, we check for ANY log today
     // but prioritize the specific slot if we are in one.
     final logs = HiveService.moodBox.values.where((log) {
-      if (log.userId != userId || 
-          log.loggedAt.year != now.year || 
-          log.loggedAt.month != now.month || 
-          log.loggedAt.day != now.day) return false;
-      
+      if (log.userId != userId ||
+          log.loggedAt.year != now.year ||
+          log.loggedAt.month != now.month ||
+          log.loggedAt.day != now.day)
+        return false;
+
       if (slot == MoodSlot.morning) {
         return log.loggedAt.hour >= 5 && log.loggedAt.hour < 12;
       } else if (slot == MoodSlot.evening) {
         return log.loggedAt.hour >= 17 && log.loggedAt.hour <= 23;
       }
-      
+
       return true; // Outside slots, show any log for today
     });
-    
+
     if (logs.isNotEmpty) {
       // Get the latest log for this slot/day
       state = logs.reduce((a, b) => a.loggedAt.isAfter(b.loggedAt) ? a : b);
@@ -82,7 +83,7 @@ class MoodNotifier extends StateNotifier<MoodLog?> {
     if (userId.isEmpty) return;
 
     final now = DateTime.now();
-    
+
     // Create Mode Log
     final moodLog = MoodLog(
       id: _uuid.v4(),
@@ -108,12 +109,15 @@ class MoodNotifier extends StateNotifier<MoodLog?> {
 
     // Auto-create Journal Entry from Mood & Note
     final journalContent = StringBuffer();
-    journalContent.write("A moment of $moodLabel. Stress level: $stressRating/5.");
+    journalContent.write(
+      "A moment of $moodLabel. Stress level: $stressRating/5.",
+    );
     if (note != null && note.trim().isNotEmpty) {
       journalContent.write("\n\n${note.trim()}");
     }
 
     final journalEntry = JournalEntry.create(
+      userId: userId,
       title: "Daily Reflection",
       content: journalContent.toString(),
       moodIndex: moodIndex.toDouble(),

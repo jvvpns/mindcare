@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -9,13 +10,21 @@ import '../../core/services/sync_service.dart';
 
 final plannerProvider =
     StateNotifierProvider<PlannerNotifier, List<PlannerEntry>>((ref) {
-  return PlannerNotifier(ref);
-});
+      return PlannerNotifier(ref);
+    });
 
 class PlannerNotifier extends StateNotifier<List<PlannerEntry>> {
   final Ref _ref;
+  StreamSubscription? _subscription;
+
   PlannerNotifier(this._ref) : super([]) {
     _load();
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 
   Box<PlannerEntry>? _box;
@@ -23,9 +32,9 @@ class PlannerNotifier extends StateNotifier<List<PlannerEntry>> {
   Future<void> _load() async {
     _box = Hive.box<PlannerEntry>(AppConstants.boxPlannerEntries);
     _refresh();
-    
+
     // Listen for external changes (sync, etc.)
-    _box!.watch().listen((_) => _refresh());
+    _subscription = _box!.watch().listen((_) => _refresh());
   }
 
   Future<void> addTask({
@@ -51,14 +60,14 @@ class PlannerNotifier extends StateNotifier<List<PlannerEntry>> {
     );
     await _box?.put(entry.id, entry);
     await NotificationService.instance.scheduleTaskReminder(entry);
-    
+
     // Queue offline-first background sync
     SyncService.instance.queueUpsert(
       table: 'planner_entries',
       id: entry.id,
       data: entry.toMap(),
     );
-    
+
     _refresh();
   }
 
@@ -84,7 +93,7 @@ class PlannerNotifier extends StateNotifier<List<PlannerEntry>> {
     );
 
     await _box?.put(id, updated);
-    
+
     // Update notifications: Cancel old one and schedule new one
     await NotificationService.instance.cancelReminder(id);
     if (!updated.isCompleted) {
@@ -104,42 +113,46 @@ class PlannerNotifier extends StateNotifier<List<PlannerEntry>> {
   Future<void> toggleDone(String id) async {
     final entry = _box?.get(id);
     if (entry == null) return;
-    
+
     // PlannerEntry fields are final in the existing model, so we copyWith
     final updated = entry.copyWith(isCompleted: !entry.isCompleted);
     await _box?.put(id, updated);
-    
+
     if (updated.isCompleted) {
       await NotificationService.instance.cancelReminder(id);
     } else {
       await NotificationService.instance.scheduleTaskReminder(updated);
     }
-    
+
     // Queue offline-first background sync
     SyncService.instance.queueUpsert(
       table: 'planner_entries',
       id: updated.id,
       data: updated.toMap(),
     );
-    
+
     _refresh();
   }
 
   Future<void> deleteTask(String id) async {
     await _box?.delete(id);
     await NotificationService.instance.cancelReminder(id);
-    
+
     // Queue deletion
-    SyncService.instance.queueDelete(
-      table: 'planner_entries',
-      id: id,
-    );
-    
+    SyncService.instance.queueDelete(table: 'planner_entries', id: id);
+
     _refresh();
   }
 
   void _refresh() {
-    state = (_box?.values.toList() ?? [])
+    if (!mounted) return;
+    final user = _ref.read(authProvider).user;
+    if (user == null) {
+      state = [];
+      return;
+    }
+
+    state = (_box?.values.where((e) => e.userId == user.id).toList() ?? [])
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
   }
 }

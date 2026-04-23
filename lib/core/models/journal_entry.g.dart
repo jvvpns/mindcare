@@ -18,6 +18,7 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
     };
     return JournalEntry(
       id: fields[0] as String,
+      userId: fields[6] == null ? 'local' : fields[6] as String,
       title: fields[1] as String,
       content: fields[2] as String,
       moodIndex: fields[3] as double?,
@@ -29,7 +30,7 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
   @override
   void write(BinaryWriter writer, JournalEntry obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +42,9 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       ..writeByte(4)
       ..write(obj.createdAt)
       ..writeByte(5)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(6)
+      ..write(obj.userId);
   }
 
   @override

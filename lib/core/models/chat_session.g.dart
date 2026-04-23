@@ -18,6 +18,7 @@ class ChatSessionAdapter extends TypeAdapter<ChatSession> {
     };
     return ChatSession(
       id: fields[0] as String,
+      userId: fields[4] == null ? 'local' : fields[4] as String,
       title: fields[1] as String,
       createdAt: fields[2] as DateTime,
       updatedAt: fields[3] as DateTime,
@@ -27,7 +28,7 @@ class ChatSessionAdapter extends TypeAdapter<ChatSession> {
   @override
   void write(BinaryWriter writer, ChatSession obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class ChatSessionAdapter extends TypeAdapter<ChatSession> {
       ..writeByte(2)
       ..write(obj.createdAt)
       ..writeByte(3)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(4)
+      ..write(obj.userId);
   }
 
   @override

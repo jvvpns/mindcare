@@ -16,8 +16,8 @@ class IntelligenceService {
 
   final Dio _dio = Dio(BaseOptions(
     baseUrl: AppConstants.backendUrl,
-    connectTimeout: const Duration(seconds: 15), // Handle Render cold starts
-    receiveTimeout: const Duration(seconds: 30),
+    connectTimeout: const Duration(seconds: 60), // Increased for Render cold starts
+    receiveTimeout: const Duration(seconds: 60),
   ));
 
   Future<String?> _getJwt() async {
@@ -80,35 +80,37 @@ class IntelligenceService {
     double burnoutHistory = 0.0,
     String userId = 'anonymous',
   }) async {
-    try {
-      final response = await _dio.post(
-        '/v1/predict/burnout',
-        data: {
-          'version': '1.0.0',
-          'features': {
-            'mood_trend_score': moodTrend,
-            'sleep_avg_hours': sleepHours,
-            'task_load_index': taskLoad,
-            'burnout_history_score': burnoutHistory,
-            'meal_skip_rate': mealSkipRate,
+    return retry(() async {
+      try {
+        final response = await _dio.post(
+          '/v1/predict/burnout',
+          data: {
+            'version': '1.0.0',
+            'features': {
+              'mood_trend_score': moodTrend,
+              'sleep_avg_hours': sleepHours,
+              'task_load_index': taskLoad,
+              'burnout_history_score': burnoutHistory,
+              'meal_skip_rate': mealSkipRate,
+            },
+            'metadata': {
+              'user_id': userId,
+              'timestamp': DateTime.now().toUtc().toIso8601String(),
+            },
           },
-          'metadata': {
-            'user_id': userId,
-            'timestamp': DateTime.now().toUtc().toIso8601String(),
-          },
-        },
-      );
-      return response.data;
-    } on DioException catch (e) {
-      debugPrint('IntelligenceService: predictBurnout error: ${e.message}');
-      rethrow;
-    }
+        );
+        return response.data;
+      } on DioException catch (e) {
+        debugPrint('IntelligenceService: predictBurnout error: ${e.message}');
+        rethrow;
+      }
+    });
   }
 
   /// ── Utilities ────────────────────────────────────────────────────────────
 
   /// Helper for retrying cold-start failures (common on Render free tier)
-  Future<T> retry<T>(Future<T> Function() fn, {int attempts = 2}) async {
+  Future<T> retry<T>(Future<T> Function() fn, {int attempts = 3}) async {
     int count = 0;
     while (true) {
       try {

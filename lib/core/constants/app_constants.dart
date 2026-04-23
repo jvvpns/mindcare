@@ -6,17 +6,30 @@ class AppConstants {
 
   static const String appName    = 'HILWAY';
   static const String appTagline = 'Your holistic mental health companion.';
-  static const String appVersion = '1.1.1'; // ── Internal Version Control ──
+  static const String appVersion = '1.2.2'; // ── Internal Version Control ──
 
   // ── Supabase ──────────────────────────────────────────────────────────────
-  static String get supabaseUrl     => dotenv.get('SUPABASE_URL');
-  static String get supabaseAnonKey => dotenv.get('SUPABASE_ANON_KEY');
+  static String get supabaseUrl {
+    const defineUrl = String.fromEnvironment('SUPABASE_URL');
+    if (defineUrl.isNotEmpty) return defineUrl;
+    return dotenv.get('SUPABASE_URL', fallback: '');
+  }
+
+  static String get supabaseAnonKey {
+    const defineKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+    if (defineKey.isNotEmpty) return defineKey;
+    return dotenv.get('SUPABASE_ANON_KEY', fallback: '');
+  }
 
   // ── Gemini ────────────────────────────────────────────────────────────────
-  static String get geminiApiKey    => dotenv.get('GEMINI_API_KEY');
-  static const String geminiModel   = 'gemini-3.1-flash-lite-preview';
+  static String get geminiApiKey {
+    const defineKey = String.fromEnvironment('GEMINI_API_KEY');
+    if (defineKey.isNotEmpty) return defineKey;
+    return dotenv.get('GEMINI_API_KEY', fallback: '');
+  }
 
-  // ── Backend ───────────────────────────────────────────────────────────────
+  static const String geminiModel = 'gemini-3.1-flash-lite-preview';
+
   // ── Backend ───────────────────────────────────────────────────────────────
   static String get backendUrl {
     // 1. Try .env file (bundled as asset)
@@ -64,9 +77,13 @@ class AppConstants {
   static const String tableMoodLogs       = 'mood_logs';
   static const String tableStressRatings  = 'stress_ratings';
   static const String tablePlannerEntries = 'planner_entries';
-  static const String tableAssessments    = 'assessments';
+  static const String tableAssessments    = 'assessment_results';
   static const String tableSettings       = 'settings';
   static const String tableJournalEntries = 'journal_entries';
+  static const String tableShiftTasks     = 'shift_tasks';
+  static const String tableRefuelLogs     = 'refuel_logs';
+  static const String tableChatMessages   = 'chat_messages';
+  static const String tableChatSessions   = 'chat_sessions';
 
   // ── Hive Type IDs ─────────────────────────────────────────────────────────
   static const int hiveTypeMoodLog          = 0;
@@ -201,6 +218,13 @@ class AppConstants {
       'body': 'Manage your clinical duties, exams, and to-dos all in one place. '
           'HILWAY keeps your academic life organized so you can focus on what matters.',
       'asset': 'assets/images/tutorial_planner.png',
+    },
+    {
+      'title': 'Quick Task Entry',
+      'subtitle': 'Manage your schedule',
+      'body': 'Tap any date on your calendar to add duties or exams. Set reminders '
+          'to stay notified so you never miss an important deadline or clinical shift.',
+      'asset': 'assets/images/tutorial_add_task.png',
     },
     {
       'title': 'You are not alone',

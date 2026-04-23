@@ -37,36 +37,7 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // User Profile Section
-                  Center(
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight.withValues(alpha: 0.5),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 2),
-                          ),
-                          child: const Center(
-                            child: PhosphorIcon(PhosphorIconsRegular.user, size: 40, color: AppColors.primary),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          user?.email ?? 'Guiding Star',
-                          style: AppTextStyles.headingMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Nursing Student',
-                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 12),
   
                   // Preferences
                   const Text('Preferences', style: AppTextStyles.labelLarge),
@@ -147,12 +118,7 @@ class SettingsScreen extends ConsumerWidget {
                     width: double.infinity,
                     height: 56,
                     child: OutlinedButton.icon(
-                      onPressed: () async {
-                        await ref.read(authProvider.notifier).signOut();
-                        if (context.mounted) {
-                          context.go('/login');
-                        }
-                      },
+                      onPressed: () => _showSignOutConfirmation(context, ref),
                       icon: const PhosphorIcon(PhosphorIconsRegular.signOut, color: AppColors.error),
                       label: Text('Sign Out', style: AppTextStyles.buttonLarge.copyWith(color: AppColors.error)),
                       style: OutlinedButton.styleFrom(
@@ -167,7 +133,7 @@ class SettingsScreen extends ConsumerWidget {
                     child: Column(
                       children: [
                         Text(
-                          'HILWAY v1.1.1',
+                          'HILWAY v1.2.2',
                           style: AppTextStyles.labelSmall.copyWith(
                             color: AppColors.textTertiary.withValues(alpha: 0.5),
                             letterSpacing: 2.0,
@@ -218,6 +184,43 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showSignOutConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Sign Out?', style: AppTextStyles.headingSmall),
+        content: const Text(
+          'Are you sure you want to sign out? Your clinical data is safely synced to the cloud.',
+          style: AppTextStyles.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              await ref.read(authProvider.notifier).signOut();
+              if (context.mounted) {
+                context.go('/login');
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: const Text('Sign Out'),
+          ),
+        ],
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hilway/core/constants/app_constants.dart';
@@ -133,23 +134,33 @@ class HiveService {
   }
 
   static Future<void> clearAllData() async {
-    for (final boxName in [
-      AppConstants.boxMoodLogs,
-      AppConstants.boxStressRatings,
-      AppConstants.boxChatMessages,
-      AppConstants.boxChatSessions,
-      AppConstants.boxJournalEntries,
-      AppConstants.boxPlannerEntries,
-      AppConstants.boxAssessments,
-      AppConstants.boxShiftTasks,
-      AppConstants.boxRefuelLogs,
-      AppConstants.boxSyncQueue,
-      AppConstants.boxSettings,
-      AppConstants.boxUserCache,
-    ]) {
-      if (Hive.isBoxOpen(boxName)) {
-        await Hive.box(boxName).clear();
+    try {
+      // Use existing getters to ensure type consistency and avoid HiveError
+      final boxes = [
+        moodBox,
+        stressBox,
+        chatBox,
+        chatSessionBox,
+        journalBox,
+        plannerBox,
+        assessmentBox,
+        shiftBox,
+        refuelBox,
+        settingsBox,
+        userCacheBox,
+      ];
+
+      for (final box in boxes) {
+        try {
+          if (box.isOpen) {
+            await box.clear();
+          }
+        } catch (e) {
+          debugPrint('HiveService: Error clearing box ${box.name}: $e');
+        }
       }
+    } catch (e) {
+      debugPrint('HiveService: Critical error in clearAllData: $e');
     }
   }
 
